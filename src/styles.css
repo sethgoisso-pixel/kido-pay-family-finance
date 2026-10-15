@@ -479,3 +479,34 @@ a[href*="lovable.dev"] {
   color: var(--muted-foreground);
   font-weight: 400;
 }
+/* Virement instantané */
+.instant-transfer-block {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+
+.instant-subtitle {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
+.instant-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.instant-btn {
+  font-weight: 700;
+  border-color: var(--border);
+  transition: all 0.2s ease;
+}
+
+.instant-btn:hover {
+  border-color: var(--mint);
+  color: var(--mint);
+  background: var(--surface-raised);
+}
