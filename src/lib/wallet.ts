@@ -12,3 +12,33 @@ export function spendSnack(balance: number, permissions: Permissions) {
 export function decideRequest(permissions: Permissions, category: CategoryId, approved: boolean): Permissions {
   return approved ? { ...permissions, [category]: true } : permissions;
 }
+export interface ChildData {
+  id: 'leo' | 'emma';
+  name: string;
+  age: number;
+  initialBalance: number;
+  initialAllowance: number;
+  initialFrequency: 'weekly' | 'monthly';
+  initialPermissions: Permissions;
+}
+
+export const CHILDREN: ChildData[] = [
+  {
+    id: 'leo',
+    name: 'Léo',
+    age: 16,
+    initialBalance: 3500,
+    initialAllowance: 35,
+    initialFrequency: 'weekly',
+    initialPermissions: { food: true, games: false, shopping: true, transport: true, subscriptions: true },
+  },
+  {
+    id: 'emma',
+    name: 'Emma',
+    age: 13,
+    initialBalance: 1850,
+    initialAllowance: 15,
+    initialFrequency: 'monthly',
+    initialPermissions: { food: true, games: false, shopping: false, transport: true, subscriptions: false },
+  },
+];
