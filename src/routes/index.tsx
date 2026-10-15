@@ -330,4 +330,81 @@ function Index() {
                   <BalanceCard balance={balance} />
                   <div className="teen-allowance">
                     <div className="mini-icon"><ArrowDownLeft size={16} /></div>
+                                        <div><strong>Le prochain petit boost</strong><span>{frequency === 'weekly' ? 'Lundi prochain' : 'Le 1er du mois'}</span></div>
+                    <strong>+{allowance} €</strong>
+                  </div>
+                  <div className="wallet-section-heading"><h4>Où tu peux dépenser</h4><span>{Object.values(permissions).filter(Boolean).length}/5 actives</span></div>
+                  <div className="teen-categories">
+                    {categories.map(category => (
+                      <motion.div layout={!reduced} key={category.id} animate={{ opacity: permissions[category.id] ? 1 : .75 }}>
+                        <Button
+                          variant="ghost"
+                          aria-label={`${category.short} — ${permissions[category.id] ? 'autorisée' : 'bloquée'}`}
+                          onClick={() => setSelected(category.id)}
+                          className={cn('teen-category', !permissions[category.id] && 'locked')}
+                        >
+                          <span className="teen-category-top"><category.icon size={20} />{permissions[category.id] ? <span className="active-dot" /> : <LockKeyhole size={13} />}</span>
+                          <strong>{category.short}</strong>
+                          <span className="category-state">{permissions[category.id] ? 'C’est permis' : 'Bloqué par les parents'}</span>
+                        </Button>
+                      </motion.div>
+                    ))}
+                  </div>
+                  <div className="wallet-section-heading activity-heading"><h4>Les derniers mouvements</h4><span><MoreHorizontal size={18} /></span></div>
+                  <div className="activity-list">
+                    <AnimatePresence initial={false}>
+                      {activity.slice(0, 3).map(item => (
+                        <motion.div key={item.id} initial={{ opacity: 0, height: 0, y: -8 }} animate={{ opacity: 1, height: 'auto', y: 0 }} className="activity-row">
+                          <div className={cn('activity-icon', item.amount > 0 && 'positive')}>
+                            {item.kind === 'allowance' ? <ArrowDownLeft size={16} /> : item.kind === 'snack' ? <Utensils size={16} /> : <ShoppingBag size={16} />}
+                          </div>
+                          <div><strong>{item.title}</strong><span>{item.note}</span></div>
+                          <strong className={cn(item.amount > 0 && 'text-mint')}>{item.amount > 0 ? '+' : '−'}{money(Math.abs(item.amount))}</strong>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                  <Button variant="outline" className="simulate-button" onClick={simulate}><Zap size={15} />Simuler une dépense<span>−8,50 €</span></Button>
+                </div>
+                <div className="phone-bottom"><Wallet size={19} className="text-primary" /><span>Mon portefeuille</span><span className="home-indicator" /></div>
+              </div>
+            </div>
+            <div className="sync-caption"><span /><span>Connectés, même à distance.</span><RefreshCw size={12} /></div>
+          </motion.section>
+        </div>
+
+        <footer className="page-footer">
+          <span><ShieldCheck size={14} />Un espace sécurisé. Une famille connectée.</span>
+          <div>
+            <span className="hackathon-tag">HYPERBLOOM <span>’26</span></span>
+            <span className="footer-divider" />
+            <Button variant="ghost" size="sm" onClick={reset} title="Réinitialiser la démo"><RefreshCw size={13} />Réinitialiser la démo</Button>
+          </div>
+        </footer>
+      </main>
+
+      <Dialog open={selected !== null} onOpenChange={open => { if (!open) setSelected(null); }}>
+        <DialogContent className="wallet-dialog">
+          <div className={cn('modal-icon', selected && !permissions[selected] && 'blocked')}>
+            {selected && !permissions[selected] ? <LockKeyhole size={25} /> : <ShieldCheck size={25} />}
+          </div>
+          <DialogTitle>{selected && !permissions[selected] ? 'Une petite limite, pour le moment' : selectedCategory?.short}</DialogTitle>
+          <DialogDescription>
+            {selected && !permissions[selected]
+              ? 'Cette catégorie est temporairement restreinte par vos parents'
+              : 'Cette catégorie est autorisée. Tu peux y utiliser ton solde disponible en toute confiance.'}
+          </DialogDescription>
+          {selected && !permissions[selected] ? (
+            <Button className="modal-action" disabled={pending} onClick={requestUnlock}>
+              {pending ? 'Demande déjà envoyée' : 'Demander un déblocage exceptionnel'}<ArrowRight />
+            </Button>
+          ) : (
+            <Button className="modal-action" onClick={() => setSelected(null)}>C’est compris<Check /></Button>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
      
