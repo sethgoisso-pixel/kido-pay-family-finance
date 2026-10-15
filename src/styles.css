@@ -182,6 +182,8 @@
   --phone-island: oklch(.085 0 0);
   --card-decoration: oklch(.765 .16 163 / .085);
   --shadow-phone: 0 20px 60px oklch(0 0 0 / .3), inset 0 0 0 2px oklch(.4 .008 285 / .25);
+  --brand-spark: oklch(.765 .16 163);
+  --holo-shine: oklch(1 0 0 / .35);
 }
 :root[data-theme="light"] {
   --background: oklch(.986 .002 247);
@@ -201,13 +203,18 @@
   --phone-rim: oklch(.82 .009 285);
   --phone-surface: oklch(1 0 0);
   --shadow-phone: 0 20px 50px oklch(.25 .01 285 / .12), inset 0 0 0 2px oklch(1 0 0 / .5);
+  --brand-spark: oklch(.48 .115 163);
+  --holo-shine: oklch(1 0 0 / .45);
 }
 body { font-family: var(--font-sans); letter-spacing: 0; margin: 0; }
 button, a, input { -webkit-tap-highlight-color: transparent; }
 .app-shell { min-height: 100vh; }
 .topbar { height: 91px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: minmax(220px,1fr) auto minmax(200px,1fr); align-items: center; gap: 24px; padding: 0 42px; background: var(--background); }
 .brand-group { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.brand-icon { background: var(--primary); color: var(--primary-foreground); height: 39px; width: 39px; display: grid; place-items: center; border-radius: 11px; flex-shrink: 0; }
+.brand-icon { position: relative; overflow: hidden; background: linear-gradient(135deg, oklch(.585 .215 277), oklch(.45 .2 277)); color: var(--primary-foreground); height: 39px; width: 39px; display: grid; place-items: center; border-radius: 11px; flex-shrink: 0; box-shadow: 0 4px 14px oklch(.585 .215 277 / .35); }
+.brand-k { width: 22px; height: 22px; position: relative; z-index: 1; }
+.brand-sheen { position: absolute; inset: 0; background: linear-gradient(105deg, transparent 30%, oklch(1 0 0 / .22) 50%, transparent 70%); transform: translateX(-100%); animation: brand-sweep 5s ease-in-out infinite; }
+@keyframes brand-sweep { 0%, 70% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 .brand-name { font-weight: 800; font-size: 22px; display: flex; align-items: center; gap: 4px; }
 .brand-name > span:first-child { font-weight: 500; }
 .brand-dot { height: 5px; width: 5px; background: var(--primary); border-radius: 50%; align-self: start; margin-top: 7px; }
@@ -303,6 +310,16 @@ h3 { font-size: 13px; font-weight: 600; }
 .teen-avatar { position: relative; }
 .teen-avatar img { border-radius: 50%; object-fit: cover; }
 .teen-avatar > span { position: absolute; bottom: 1px; right: 0; height: 10px; width: 10px; border: 2px solid var(--phone-surface); border-radius: 50%; background: var(--mint); }
+.holo-scene { perspective: 900px; }
+.holo-card { transform-style: preserve-3d; will-change: transform; transition: box-shadow .25s ease; box-shadow: 0 10px 30px oklch(0 0 0 / .35); }
+.holo-card:hover { box-shadow: 0 18px 40px oklch(0 0 0 / .5); }
+.holo-clip { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 0; }
+.holo-foil { position: absolute; inset: -40%; opacity: .35; mix-blend-mode: color-dodge; pointer-events: none; }
+.holo-weave { position: absolute; inset: 0; background-image: radial-gradient(oklch(1 0 0 / .07) 1px, transparent 1px); background-size: 8px 8px; opacity: .4; }
+.holo-glare { position: absolute; inset: -20%; pointer-events: none; mix-blend-mode: overlay; }
+.holo-k { position: absolute; right: -15px; bottom: -20px; width: 140px; height: 140px; opacity: .07; color: var(--foreground); pointer-events: none; }
+.holo-flash { position: absolute; inset: 0; background: oklch(1 0 0 / .2); pointer-events: none; animation: flash-fade .5s ease-out forwards; border-radius: inherit; }
+@keyframes flash-fade { from { opacity: 1; } to { opacity: 0; } }
 .balance-card { border: 1px solid var(--mint-soft); background: var(--mint-soft); border-radius: 9px; padding: 19px 17px 16px; overflow: hidden; position: relative; }
 .balance-top { display: flex; justify-content: space-between; color: var(--mint); font-size: 9px; }
 .balance-top > span { color: var(--muted-foreground); }
