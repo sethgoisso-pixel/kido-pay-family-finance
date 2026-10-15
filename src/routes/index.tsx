@@ -1,3 +1,4 @@
+import { INITIAL_BALANCE, INITIAL_PERMISSIONS, ALLOWANCE_MIN, ALLOWANCE_MAX, spendSnack, decideRequest, CHILDREN, type CategoryId, type ChildData } from '@/lib/wallet';
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, animate, motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
@@ -67,6 +68,8 @@ function BalanceCard({ balance }: { balance: number }) {
   </motion.div></div>;
 }
 function Index() {
+  const [childId, setChildId] = useState<'leo' | 'emma'>('leo');
+  const currentChild = CHILDREN.find(c => c.id === childId) ?? CHILDREN[0];
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [view, setView] = useState<View>('both');
   const [mobileView, setMobileView] = useState<'parent' | 'teen'>('parent');
@@ -122,6 +125,21 @@ function Index() {
         <motion.section layout={!reduced} className="parent-panel" aria-label="Contrôles parentaux">
           <div className="column-heading"><div className="column-label"><span className="heading-icon"><ShieldCheck size={17} /></span><h2>Espace parent</h2></div><span className="live-status"><span /> Synchronisé</span></div>
           <div className="allowance-section">
+            <div className="child-selector-bar">
+  {CHILDREN.map(child => (
+    <button
+      key={child.id}
+      type="button"
+      className={cn('child-tab', childId === child.id && 'active')}
+      onClick={() => switchChild(child.id)}
+    >
+      <span className="child-avatar-mini">{child.name[0]}</span>
+      <span className="child-name">{child.name}</span>
+      <span className="child-age">{child.age} ans</span>
+    </button>
+  ))}
+</div>
+          
             <div className="section-title"><div><span className="section-icon"><ArrowUpRight size={18} /></span><h3>Versements automatiques</h3></div><span className="small-tag">Argent de poche</span></div>
             <div className="allowance-value"><div><span className="field-label">Montant du versement</span><strong>{allowance}<span> €</span></strong></div><div className="frequency-switch"><Button variant="ghost" className={cn(frequency === 'weekly' && 'selected')} onClick={() => setFrequency('weekly')}>Hebdomadaire</Button><Button variant="ghost" className={cn(frequency === 'monthly' && 'selected')} onClick={() => setFrequency('monthly')}>Mensuel</Button></div></div>
             <Slider aria-label="Montant du versement" min={ALLOWANCE_MIN} max={ALLOWANCE_MAX} step={5} value={[allowance]} onValueChange={v => { if (v[0] !== undefined) setAllowance(v[0]); }} className="allowance-slider" />
@@ -140,9 +158,11 @@ function Index() {
           <div className="parent-bottom"><Heart size={15} /><span>L’autonomie s’apprend. La confiance se construit.</span></div>
         </motion.section>
         <motion.section layout={!reduced} className="teen-panel" aria-label="Portefeuille ado">
-          <div className="column-heading"><div className="column-label"><span className="heading-icon"><Smartphone size={17} /></span><h2>Dans la poche de Léo</h2></div><span className="field-label preview-caption">Aperçu en direct</span></div>
+          <div className="column-heading"><div className="column-label"><span className="heading-icon"><Smartphone size={17} /></span><h2>Dans la poche de {currentChild.name}</h2>
+          </div><span className="field-label preview-caption">Aperçu en direct</span></div>
           <div className="phone-surround"><div className="phone-frame"><div className="phone-status"><span>9:41</span><div className="dynamic-island" /><span className="phone-signals"><Radio size={13} /><span className="battery" /></span></div>
-            <div className="phone-content"><div className="teen-header"><div><p>TON ESPACE, TES PROJETS</p><h3>Salut Léo <span className="wave">✌️</span></h3></div><div className="teen-avatar"><img src={leo} alt="Léo" width={43} height={43} /><span /></div></div>
+            <div className="phone-content"><div className="teen-header"><div><p>TON ESPACE, TES PROJETS</p><h3>Salut {currentChild.name} <span className="wave">✌️</span></h3>
+</div><div className="teen-avatar"><img src={leo} alt="Léo" width={43} height={43} /><span /></div></div>
               <BalanceCard balance={balance} />
               <div className="teen-allowance"><div className="mini-icon"><ArrowDownLeft size={16} /></div><div><strong>Le prochain petit boost</strong><span>{frequency === 'weekly' ? 'Lundi prochain' : 'Le 1er du mois'}</span></div><strong>+{allowance} €</strong></div>
               <div className="wallet-section-heading"><h4>Où tu peux dépenser</h4><span>{Object.values(permissions).filter(Boolean).length}/5 actives</span></div>
