@@ -35,7 +35,7 @@ function Balance({ value }: { value: number }) {
   const [display, setDisplay] = useState(value);
   const reduced = useReducedMotion();
   useEffect(() => { const control = animate(display, value, { duration: reduced ? 0 : .65, onUpdate: setDisplay }); return () => control.stop(); }, [value, reduced]);
-  return <span aria-label={`Solde ${money(value)}`}>{money(Math.round(display))}</span>;
+  return <span aria-live="polite" aria-label={`Solde ${money(value)}`}>{money(Math.round(display))}</span>;
 }
 function Index() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -53,7 +53,7 @@ function Index() {
     { id: 3, title: 'Vinted', note: 'Hier, 12:15', amount: -1200, kind: 'shopping' },
   ]);
   const reduced = useReducedMotion();
-  useEffect(() => { document.documentElement.classList.toggle('dark', theme === 'dark'); document.documentElement.dataset.theme = theme; }, [theme]);
+  useEffect(() => { document.documentElement.classList.toggle('dark', theme === 'dark'); document.documentElement.dataset['theme'] = theme; }, [theme]);
   const changeView = (next: View) => { setView(next); if (next !== 'both') setMobileView(next); toast.success('Tout est synchronisé', { description: 'Les changements sont visibles en temps réel.' }); };
   const selectedCategory = categories.find(c => c.id === selected);
   const pending = selected !== null && requests.some(r => r.category === selected);

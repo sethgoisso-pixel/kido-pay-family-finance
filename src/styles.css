@@ -145,6 +145,7 @@
 
 @theme inline {
   --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --color-overlay: oklch(0 0 0 / .8);
   --color-mint: var(--mint);
   --color-mint-soft: var(--mint-soft);
   --color-alert-soft: var(--alert-soft);
