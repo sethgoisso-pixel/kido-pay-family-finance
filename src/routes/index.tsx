@@ -1,8 +1,34 @@
-import { INITIAL_BALANCE, INITIAL_PERMISSIONS, ALLOWANCE_MIN, ALLOWANCE_MAX, spendSnack, decideRequest, CHILDREN, type CategoryId, type ChildData } from '@/lib/wallet';
+import {
+  CHILDREN,
+  ALLOWANCE_MAX,
+  ALLOWANCE_MIN,
+  DECLINE_REASONS,
+  PURCHASES,
+  REQUEST_REASONS,
+  UNLOCK_CAP,
+  createAllStates,
+  createRequest,
+  daysToGoal,
+  decideRequest,
+  dismissReply,
+  goalProgress,
+  hasRequest,
+  isBlocked,
+  purchase,
+  sendMoney,
+  setPermission,
+  type CategoryId,
+  type ChildId,
+  type ChildState,
+  type Decision,
+  type Grant,
+  type Reply,
+  type UnlockRequest,
+} from '@/lib/wallet';
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, animate, motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, Bell, Bus, Check, ChevronDown, CircleHelp, CreditCard, Gamepad2, Heart, Home, LockKeyhole, MonitorSmartphone, Moon, MoreHorizontal, Plus, Radio, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Sun, Users, Utensils, Wallet, X, Zap } from 'lucide-react';
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, Bell, Bus, Check, CircleHelp, Gamepad2, Heart, LockKeyhole, MoreHorizontal, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Sun, Moon, Target, Users, Utensils, Wallet, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -31,16 +57,39 @@ const categories = [
 ] as const;
 
 type View = 'parent' | 'teen' | 'both';
-type Request = { id: number; category: CategoryId };
-type Activity = { id: number; title: string; note: string; amount: number; kind: 'snack' | 'allowance' | 'shopping' };
 
 const money = (cents: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(cents / 100);
+const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
+const categoryName = (id: CategoryId) => categories.find(c => c.id === id)?.short ?? '';
+
+function grantText(grant: Grant | undefined) {
+  if (!grant) return null;
+  return grant.kind === 'once' ? 'Débloqué pour 1 achat' : `Débloqué · ${money(grant.remaining)} max`;
+}
+
+function replyText(reply: Reply) {
+  const name = categoryName(reply.category);
+  const d = reply.decision;
+  if (d.kind === 'once') return `Tes parents disent oui, une fois, pour « ${name} ».`;
+  if (d.kind === 'cap') return `Tes parents disent oui, jusqu’à ${money(d.amount)} pour « ${name} ».`;
+  return `Pas maintenant pour « ${name} » : ${d.reason}.`;
+}
+
+function ChildAvatar({ id, name, size }: { id: ChildId; name: string; size: number }) {
+  if (id === 'leo') return <img src={leo} alt="" width={size} height={size} />;
+  return <span className="avatar-initial" style={{ width: size, height: size }} aria-hidden="true">{name[0]}</span>;
+}
 
 function Balance({ value }: { value: number }) {
   const [display, setDisplay] = useState(value);
   const reduced = useReducedMotion();
   useEffect(() => { const control = animate(display, value, { duration: reduced ? 0 : .65, onUpdate: setDisplay }); return () => control.stop(); }, [value, reduced]);
-  return <span aria-live="polite" aria-label={`Solde ${money(value)}`}>{money(Math.round(display))}</span>;
+  return (
+    <>
+      <span aria-hidden="true">{money(Math.round(display))}</span>
+      <span className="sr-only" role="status">{`Solde : ${money(value)}`}</span>
+    </>
+  );
 }
 
 function BalanceCard({ balance }: { balance: number }) {
@@ -103,7 +152,7 @@ function BalanceCard({ balance }: { balance: number }) {
           <BrandK className="holo-k" />
         </span>
         <span className="holo-flash" key={balance} aria-hidden="true" />
-        <div className="balance-top"><span>Ton solde disponible</span><Wallet size={17} /></div>
+        <div className="balance-top"><span>Ton solde disponible</span><Wallet size={17} aria-hidden="true" /></div>
         <div className="balance-number"><Balance value={balance} /></div>
         <div className="balance-bottom"><span><span /> Carte active</span><span>KIDO<span className="pay-word"> PAY</span></span></div>
       </motion.div>
@@ -111,48 +160,78 @@ function BalanceCard({ balance }: { balance: number }) {
   );
 }
 
+/** Carte d'une demande côté parent : motif de l'ado + réponse en 3 options. */
+function RequestCard({ request, childId, childName, onDecide }: {
+  request: UnlockRequest;
+  childId: ChildId;
+  childName: string;
+  onDecide: (childId: ChildId, requestId: number, decision: Decision) => void;
+}) {
+  const [declining, setDeclining] = useState(false);
+  return (
+    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: .97 }} className="request-item">
+      <ChildAvatar id={childId} name={childName} size={36} />
+      <div>
+        <strong>{childName} demande : {categoryName(request.category)}</strong>
+        <p>Motif : {request.reason}</p>
+      </div>
+      {declining ? (
+        <div className="request-declines" role="group" aria-label="Que répondre ?">
+          <span className="field-label">Que lui répondre ?</span>
+          <div className="request-actions">
+            {DECLINE_REASONS.map(reason => (
+              <Button key={reason} variant="outline" size="sm" onClick={() => onDecide(childId, request.id, { kind: 'later', reason })}>{reason}</Button>
+            ))}
+            <Button variant="ghost" size="sm" onClick={() => setDeclining(false)}>Retour</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="request-actions">
+          <Button size="sm" onClick={() => onDecide(childId, request.id, { kind: 'once' })}><Check />Oui, une fois</Button>
+          <Button variant="outline" size="sm" onClick={() => onDecide(childId, request.id, { kind: 'cap', amount: UNLOCK_CAP })}>Jusqu’à {money(UNLOCK_CAP)}</Button>
+          <Button variant="ghost" size="sm" onClick={() => setDeclining(true)}>Pas maintenant</Button>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
 function Index() {
-  const [childId, setChildId] = useState<'leo' | 'emma'>('leo');
-  const currentChild = CHILDREN.find(c => c.id === childId) ?? CHILDREN[0];
+  const [childId, setChildId] = useState<ChildId>('leo');
+  const [states, setStates] = useState<Record<ChildId, ChildState>>(createAllStates);
+  const child = states[childId];
+  const currentChild = CHILDREN.find(c => c.id === childId) ?? CHILDREN[0]!;
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [view, setView] = useState<View>('both');
   const [mobileView, setMobileView] = useState<'parent' | 'teen'>('parent');
-  const [permissions, setPermissions] = useState({ ...INITIAL_PERMISSIONS });
-  const [allowance, setAllowance] = useState(35);
-  const [frequency, setFrequency] = useState<'weekly' | 'monthly'>('weekly');
-  const [balance, setBalance] = useState(INITIAL_BALANCE);
-  const [requests, setRequests] = useState<Request[]>([]);
   const [selected, setSelected] = useState<CategoryId | null>(null);
-  const [activity, setActivity] = useState<Activity[]>([
-    { id: 1, title: 'Argent de poche', note: 'Aujourd’hui, 09:00', amount: 3500, kind: 'allowance' },
-    { id: 2, title: 'Boulangerie Paul', note: 'Hier, 16:42', amount: -450, kind: 'snack' },
-    { id: 3, title: 'Vinted', note: 'Hier, 12:15', amount: -1200, kind: 'shopping' },
-  ]);
+  const [reason, setReason] = useState('');
   const reduced = useReducedMotion();
+
+  const update = (id: ChildId, fn: (s: ChildState) => ChildState) =>
+    setStates(old => ({ ...old, [id]: fn(old[id]) }));
+
+  // Thème système au premier chargement, puis choix manuel
+  useEffect(() => {
+    if (window.matchMedia('(prefers-color-scheme: light)').matches) setTheme('light');
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     document.documentElement.dataset['theme'] = theme;
   }, [theme]);
 
-  const switchChild = (id: 'leo' | 'emma') => {
+  const allRequests = CHILDREN.flatMap(c => states[c.id].requests.map(request => ({ request, childId: c.id, childName: c.name })));
+
+  const switchChild = (id: ChildId) => {
     setChildId(id);
-    const child = CHILDREN.find(c => c.id === id);
-    if (!child) return;
-    setBalance(child.initialBalance);
-    setAllowance(child.initialAllowance);
-    setFrequency(child.initialFrequency);
-    setPermissions({ ...child.initialPermissions });
-    toast.success(`Compte de ${child.name} sélectionné`);
+    setSelected(null);
+    const next = CHILDREN.find(c => c.id === id);
+    if (next) toast.success(`Compte de ${next.name} sélectionné`);
   };
 
   const sendInstantMoney = (amountEuros: number) => {
-    const cents = amountEuros * 100;
-    setBalance(prev => prev + cents);
-    setActivity(old => [
-      { id: Date.now(), title: 'Virement de Papa', note: 'À l’instant · Coup de pouce', amount: cents, kind: 'allowance' },
-      ...old,
-    ]);
+    update(childId, s => sendMoney(s, amountEuros));
     toast.success(`Virement de +${amountEuros} € envoyé à ${currentChild.name} !`);
   };
 
@@ -162,40 +241,52 @@ function Index() {
     toast.success('Tout est synchronisé', { description: 'Les changements sont visibles en temps réel.' });
   };
 
-  const selectedCategory = categories.find(c => c.id === selected);
-  const pending = selected !== null && requests.some(r => r.category === selected);
+  const openCategory = (id: CategoryId) => {
+    setReason('');
+    setSelected(id);
+  };
 
-  const requestUnlock = () => {
-    if (!selected || permissions[selected] || pending) return;
-    setRequests(old => [...old, { id: Date.now(), category: selected }]);
+  const sendRequest = () => {
+    if (!selected || !reason) return;
+    update(childId, s => createRequest(s, selected, reason));
     setSelected(null);
-    toast.success('Demande envoyée aux parents');
+    toast.success('Demande envoyée à tes parents');
   };
 
-  const decide = (request: Request, approved: boolean) => {
-    setPermissions(old => decideRequest(old, request.category, approved));
-    setRequests(old => old.filter(r => r.id !== request.id));
-    toast[approved ? 'success' : 'error'](approved ? 'Demande approuvée · catégorie débloquée' : 'Demande refusée · catégorie toujours bloquée');
+  const decide = (id: ChildId, requestId: number, decision: Decision) => {
+    const name = CHILDREN.find(c => c.id === id)?.name ?? '';
+    update(id, s => decideRequest(s, requestId, decision));
+    if (decision.kind === 'later') toast('Réponse envoyée', { description: `${name} verra : « ${decision.reason} »` });
+    else toast.success(decision.kind === 'once' ? `Débloqué une fois pour ${name}` : `Débloqué jusqu’à ${money(decision.amount)} pour ${name}`);
   };
 
-  const simulate = () => {
-    if (!permissions.food) { setSelected('food'); return; }
-    const result = spendSnack(balance, permissions);
-    if (!result.success) { toast.error('Solde insuffisant pour cette dépense'); return; }
-    setBalance(result.balance);
-    setActivity(old => [{ id: Date.now(), title: 'Pause snack', note: 'À l’instant', amount: -850, kind: 'snack' }, ...old]);
-    toast.success('Pause snack · −8,50 €');
+  const runPurchase = (category: CategoryId) => {
+    const result = purchase(child, category);
+    if (!result.ok) {
+      if (result.reason === 'blocked') { openCategory(category); return; }
+      toast.error(result.reason === 'insufficient' ? 'Solde insuffisant pour cette dépense' : 'Cet achat dépasse le plafond accordé');
+      return;
+    }
+    update(childId, () => result.state);
+    setSelected(null);
+    const { title, cost } = PURCHASES[category];
+    const days = result.state.impact?.days ?? 0;
+    toast.success(`${title} · −${money(cost)}`, { description: days > 0 ? `Ça repousse ton objectif de ${plural(days, 'jour')}.` : undefined });
   };
 
   const reset = () => {
-    setPermissions({ ...INITIAL_PERMISSIONS });
-    setBalance(INITIAL_BALANCE);
-    setAllowance(35);
-    setFrequency('weekly');
-    setRequests([]);
-    setActivity(old => old.filter(a => a.id <= 3));
+    setStates(createAllStates());
+    setChildId('leo');
+    setSelected(null);
     toast.success('La démo est réinitialisée');
   };
+
+  const selectedCategory = categories.find(c => c.id === selected);
+  const blocked = selected !== null && isBlocked(child, selected);
+  const pending = selected !== null && hasRequest(child, selected);
+  const goalDays = daysToGoal(child);
+  const goalPct = Math.round(goalProgress(child) * 100);
+  const activeCount = categories.filter(c => !isBlocked(child, c.id)).length;
 
   return (
     <div className="app-shell bg-background text-foreground">
@@ -208,21 +299,21 @@ function Index() {
             <p className="brand-tagline">Finance parentale & autonomie ado</p>
           </div>
         </div>
-        <div className="desktop-role-switch" aria-label="Vue du compte">
-          <Button variant="ghost" className={cn('role-button', view === 'parent' && 'selected')} onClick={() => changeView('parent')}><Users />Vue Parent</Button>
-          <Button variant="ghost" className={cn('role-button', view === 'teen' && 'selected')} onClick={() => changeView('teen')}><Wallet />Vue Ado</Button>
-          <Button variant="ghost" className={cn('role-button', view === 'both' && 'selected')} onClick={() => changeView('both')}><Zap />Mode démo simultané</Button>
+        <div className="desktop-role-switch" role="group" aria-label="Vue du compte">
+          <Button variant="ghost" aria-pressed={view === 'parent'} className={cn('role-button', view === 'parent' && 'selected')} onClick={() => changeView('parent')}><Users />Vue Parent</Button>
+          <Button variant="ghost" aria-pressed={view === 'teen'} className={cn('role-button', view === 'teen' && 'selected')} onClick={() => changeView('teen')}><Wallet />Vue Ado</Button>
+          <Button variant="ghost" aria-pressed={view === 'both'} className={cn('role-button', view === 'both' && 'selected')} onClick={() => changeView('both')}><Zap />Mode démo simultané</Button>
         </div>
         <div className="header-tools">
           <span className="demo-label"><span /> Démo interactive</span>
           <Button variant="ghost" size="icon" className="theme-button" aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'} title="Changer de thème" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun /> : <Moon />}</Button>
-          <div className="parent-avatar">JD</div>
+          <div className="parent-avatar" aria-hidden="true">JD</div>
         </div>
       </header>
 
       <nav className="mobile-role-switch" aria-label="Vue mobile">
-        <Button variant="ghost" className={cn(mobileView === 'parent' && 'selected')} onClick={() => changeView('parent')}><Users />Parent{requests.length > 0 && <span className="request-count">{requests.length}</span>}</Button>
-        <Button variant="ghost" className={cn(mobileView === 'teen' && 'selected')} onClick={() => changeView('teen')}><Wallet />Ado</Button>
+        <Button variant="ghost" aria-pressed={mobileView === 'parent'} className={cn(mobileView === 'parent' && 'selected')} onClick={() => changeView('parent')}><Users />Parent{allRequests.length > 0 && <span className="request-count" aria-label={`${allRequests.length} demande(s) en attente`}>{allRequests.length}</span>}</Button>
+        <Button variant="ghost" aria-pressed={mobileView === 'teen'} className={cn(mobileView === 'teen' && 'selected')} onClick={() => changeView('teen')}><Wallet />Ado</Button>
       </nav>
 
       <main className="main-content">
@@ -233,9 +324,8 @@ function Index() {
             <p>Un peu d’argent de poche. Un grand pas vers l’indépendance.</p>
           </div>
           <div className="family-selector">
-            <img src={leo} alt={currentChild.name} width={36} height={36} />
+            <ChildAvatar id={childId} name={currentChild.name} size={36} />
             <div><strong>{currentChild.name} Dubois</strong><span>Compte ado · {currentChild.age} ans</span></div>
-            <ChevronDown size={16} />
           </div>
         </div>
 
@@ -247,17 +337,18 @@ function Index() {
             </div>
 
             <div className="allowance-section">
-              <div className="child-selector-bar">
-                {CHILDREN.map(child => (
+              <div className="child-selector-bar" role="group" aria-label="Choisir un enfant">
+                {CHILDREN.map(c => (
                   <button
-                    key={child.id}
+                    key={c.id}
                     type="button"
-                    className={cn('child-tab', childId === child.id && 'active')}
-                    onClick={() => switchChild(child.id)}
+                    aria-pressed={childId === c.id}
+                    className={cn('child-tab', childId === c.id && 'active')}
+                    onClick={() => switchChild(c.id)}
                   >
-                    <span className="child-avatar-mini">{child.name[0]}</span>
-                    <span className="child-name">{child.name}</span>
-                    <span className="child-age">{child.age} ans</span>
+                    <span className="child-avatar-mini" aria-hidden="true">{c.name[0]}</span>
+                    <span className="child-name">{c.name}</span>
+                    <span className="child-age">{c.age} ans</span>
                   </button>
                 ))}
               </div>
@@ -267,20 +358,19 @@ function Index() {
                 <span className="small-tag">Argent de poche</span>
               </div>
               <div className="allowance-value">
-                <div><span className="field-label">Montant du versement</span><strong>{allowance}<span> €</span></strong></div>
-                <div className="frequency-switch">
-                  <Button variant="ghost" className={cn(frequency === 'weekly' && 'selected')} onClick={() => setFrequency('weekly')}>Hebdomadaire</Button>
-                  <Button variant="ghost" className={cn(frequency === 'monthly' && 'selected')} onClick={() => setFrequency('monthly')}>Mensuel</Button>
+                <div><span className="field-label">Montant du versement</span><strong>{child.allowance}<span> €</span></strong></div>
+                <div className="frequency-switch" role="group" aria-label="Fréquence">
+                  <Button variant="ghost" aria-pressed={child.frequency === 'weekly'} className={cn(child.frequency === 'weekly' && 'selected')} onClick={() => update(childId, s => ({ ...s, frequency: 'weekly' }))}>Hebdomadaire</Button>
+                  <Button variant="ghost" aria-pressed={child.frequency === 'monthly'} className={cn(child.frequency === 'monthly' && 'selected')} onClick={() => update(childId, s => ({ ...s, frequency: 'monthly' }))}>Mensuel</Button>
                 </div>
               </div>
-              <Slider aria-label="Montant du versement" min={ALLOWANCE_MIN} max={ALLOWANCE_MAX} step={5} value={[allowance]} onValueChange={v => { if (v[0] !== undefined) setAllowance(v[0]); }} className="allowance-slider" />
+              <Slider aria-label="Montant du versement" min={ALLOWANCE_MIN} max={ALLOWANCE_MAX} step={5} value={[child.allowance]} onValueChange={v => { const next = v[0]; if (next !== undefined) update(childId, s => ({ ...s, allowance: next })); }} className="allowance-slider" />
               <div className="slider-labels"><span>10 €</span><span>150 €</span></div>
               <div className="next-payment">
                 <span><span className="tiny-icon"><RefreshCw size={13} /></span>Prochain versement</span>
-                <strong>{frequency === 'weekly' ? 'Lundi prochain' : 'Le 1er du mois'}<span> · {allowance} €</span></strong>
+                <strong>{child.frequency === 'weekly' ? 'Lundi prochain' : 'Le 1er du mois'}<span> · {child.allowance} €</span></strong>
               </div>
 
-              {/* Virement instantané */}
               <div className="instant-transfer-block">
                 <div className="section-title">
                   <div><span className="section-icon"><Zap size={17} /></span><h3>Virement instantané</h3></div>
@@ -300,22 +390,22 @@ function Index() {
             <div className="restrictions-section">
               <div className="section-title">
                 <div><span className="section-icon"><ShieldCheck size={18} /></span><h3>Restrictions & plafonds</h3></div>
-                <span title="Catégories autorisées" className="muted-icon"><CircleHelp size={16} /></span>
+                <span title="Catégories autorisées" className="muted-icon"><CircleHelp size={16} aria-hidden="true" /></span>
               </div>
               <p className="section-subtitle">Les bonnes limites, pour les bonnes habitudes.</p>
               <div className="permission-list">
                 {categories.map(category => (
-                  <div className={cn('permission-row', !permissions[category.id] && 'restricted')} key={category.id}>
+                  <div className={cn('permission-row', !child.permissions[category.id] && 'restricted')} key={category.id}>
                     <div className="category-icon"><category.icon size={19} /></div>
                     <div className="permission-text">
                       <label htmlFor={`permission-${category.id}`}>{category.title}</label>
-                      <span>{!permissions[category.id] ? 'Catégorie bloquée' : category.note}</span>
+                      <span>{!child.permissions[category.id] ? (grantText(child.grants[category.id]) ?? 'Catégorie bloquée') : category.note}</span>
                     </div>
                     <Switch
                       id={`permission-${category.id}`}
                       aria-label={category.title}
-                      checked={permissions[category.id]}
-                      onCheckedChange={checked => setPermissions(old => ({ ...old, [category.id]: checked }))}
+                      checked={child.permissions[category.id]}
+                      onCheckedChange={checked => update(childId, s => setPermission(s, category.id, checked))}
                       className="permission-switch"
                     />
                   </div>
@@ -326,29 +416,23 @@ function Index() {
 
             <div className="requests-section">
               <div className="section-title">
-                <div><span className="section-icon"><Bell size={18} /></span><h3>Centre de demandes</h3><span className="count-tag">{requests.length}</span></div>
+                <div><span className="section-icon"><Bell size={18} /></span><h3>Centre de demandes</h3><span className="count-tag">{allRequests.length}</span></div>
                 <span className="field-label">En temps réel</span>
               </div>
-              <AnimatePresence mode="popLayout">
-                {requests.length === 0 ? (
-                  <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="empty-requests">
+              <div aria-live="polite">
+                <AnimatePresence initial={false}>
+                  {allRequests.map(({ request, childId: requestChildId, childName }) => (
+                    <RequestCard key={request.id} request={request} childId={requestChildId} childName={childName} onDecide={decide} />
+                  ))}
+                </AnimatePresence>
+                {allRequests.length === 0 && (
+                  <div className="empty-requests">
                     <div className="all-clear"><Check size={19} /></div>
                     <div><strong>Tout est en ordre</strong><p>Aucune demande en attente. {currentChild.name} gère comme un pro.</p></div>
                     <span className="small-sparkle"><Sparkles size={19} /></span>
-                  </motion.div>
-                ) : (
-                  requests.map(request => (
-                    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: .97 }} key={request.id} className="request-item">
-                      <img src={leo} alt="" width={36} height={36} />
-                      <div><strong>Un petit coup de pouce ?</strong><p>{currentChild.name} · {categories.find(c => c.id === request.category)?.short}</p></div>
-                      <div className="request-actions">
-                        <Button size="sm" onClick={() => decide(request, true)}><Check />Approuver</Button>
-                        <Button variant="outline" size="icon" title="Refuser" aria-label="Refuser la demande" onClick={() => decide(request, false)}><X /></Button>
-                      </div>
-                    </motion.div>
-                  ))
+                  </div>
                 )}
-              </AnimatePresence>
+              </div>
             </div>
             <div className="parent-bottom"><Heart size={15} /><span>L’autonomie s’apprend. La confiance se construit.</span></div>
           </motion.section>
@@ -360,55 +444,81 @@ function Index() {
             </div>
             <div className="phone-surround">
               <div className="phone-frame">
-                <div className="phone-status"><span>9:41</span><div className="dynamic-island" /><span className="phone-signals"><Radio size={13} /><span className="battery" /></span></div>
+                <div className="phone-status" aria-hidden="true"><span>9:41</span><div className="dynamic-island" /><span className="phone-signals"><span className="battery" /></span></div>
                 <div className="phone-content">
                   <div className="teen-header">
-                    <div><p>TON ESPACE, TES PROJETS</p><h3>Salut {currentChild.name} <span className="wave">✌️</span></h3></div>
-                    <div className="teen-avatar"><img src={leo} alt={currentChild.name} width={43} height={43} /><span /></div>
+                    <div><p>TON ESPACE, TES PROJETS</p><h3>Salut {currentChild.name} <span className="wave" aria-hidden="true">✌️</span></h3></div>
+                    <div className="teen-avatar"><ChildAvatar id={childId} name={currentChild.name} size={43} /><span /></div>
                   </div>
-                  <BalanceCard balance={balance} />
+                  <BalanceCard balance={child.balance} />
                   <div className="teen-allowance">
                     <div className="mini-icon"><ArrowDownLeft size={16} /></div>
-                                        <div><strong>Le prochain petit boost</strong><span>{frequency === 'weekly' ? 'Lundi prochain' : 'Le 1er du mois'}</span></div>
-                    <strong>+{allowance} €</strong>
+                    <div><strong>Le prochain petit boost</strong><span>{child.frequency === 'weekly' ? 'Lundi prochain' : 'Le 1er du mois'}</span></div>
+                    <strong>+{child.allowance} €</strong>
                   </div>
-                  <div className="wallet-section-heading"><h4>Où tu peux dépenser</h4><span>{Object.values(permissions).filter(Boolean).length}/5 actives</span></div>
+
+                  <div className="goal-card">
+                    <div className="goal-top">
+                      <span className="goal-label"><Target size={15} aria-hidden="true" /> Objectif · {child.goal.name}</span>
+                      <strong>{money(child.balance)} / {money(child.goal.target)}</strong>
+                    </div>
+                    <div className="goal-bar" role="progressbar" aria-label={`Progression vers ${child.goal.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={goalPct}><span style={{ width: `${goalPct}%` }} /></div>
+                    <p className="goal-meta">{goalDays === 0 ? 'Objectif atteint, bravo !' : `Au rythme actuel : encore ~${plural(goalDays, 'jour')}.`}</p>
+                    {child.impact && <p className="goal-impact" role="status">{child.impact.title} : ça repousse ton objectif de {plural(child.impact.days, 'jour')}.</p>}
+                  </div>
+
+                  {child.reply && (
+                    <div className={cn('reply-banner', child.reply.decision.kind === 'later' && 'later')} role="status">
+                      <span>{replyText(child.reply)}</span>
+                      <button type="button" aria-label="Fermer le message" onClick={() => update(childId, dismissReply)}><X size={16} /></button>
+                    </div>
+                  )}
+
+                  <div className="wallet-section-heading"><h4>Où tu peux dépenser</h4><span>{activeCount}/5 actives</span></div>
                   <div className="teen-categories">
-                    {categories.map(category => (
-                      <motion.div layout={!reduced} key={category.id} animate={{ opacity: permissions[category.id] ? 1 : .75 }}>
-                        <Button
-                          variant="ghost"
-                          aria-label={`${category.short} — ${permissions[category.id] ? 'autorisée' : 'bloquée'}`}
-                          onClick={() => setSelected(category.id)}
-                          className={cn('teen-category', !permissions[category.id] && 'locked')}
-                        >
-                          <span className="teen-category-top"><category.icon size={20} />{permissions[category.id] ? <span className="active-dot" /> : <LockKeyhole size={13} />}</span>
-                          <strong>{category.short}</strong>
-                          <span className="category-state">{permissions[category.id] ? 'C’est permis' : 'Bloqué par les parents'}</span>
-                        </Button>
-                      </motion.div>
-                    ))}
+                    {categories.map(category => {
+                      const isLocked = isBlocked(child, category.id);
+                      const grant = child.grants[category.id];
+                      const status = !isLocked
+                        ? (grantText(grant) ?? 'C’est permis')
+                        : hasRequest(child, category.id) ? 'Demande envoyée' : 'Bloqué par les parents';
+                      return (
+                        <motion.div layout={!reduced} key={category.id} animate={{ opacity: isLocked ? .85 : 1 }}>
+                          <Button
+                            variant="ghost"
+                            aria-label={`${category.short} — ${status}`}
+                            onClick={() => openCategory(category.id)}
+                            className={cn('teen-category', isLocked && 'locked')}
+                          >
+                            <span className="teen-category-top"><category.icon size={20} />{isLocked ? <LockKeyhole size={13} /> : <span className="active-dot" />}</span>
+                            <strong>{category.short}</strong>
+                            <span className="category-state">{status}</span>
+                          </Button>
+                        </motion.div>
+                      );
+                    })}
                   </div>
-                  <div className="wallet-section-heading activity-heading"><h4>Les derniers mouvements</h4><span><MoreHorizontal size={18} /></span></div>
+                  <div className="wallet-section-heading activity-heading"><h4>Les derniers mouvements</h4><span><MoreHorizontal size={18} aria-hidden="true" /></span></div>
                   <div className="activity-list">
                     <AnimatePresence initial={false}>
-                      {activity.slice(0, 3).map(item => (
-                        <motion.div key={item.id} initial={{ opacity: 0, height: 0, y: -8 }} animate={{ opacity: 1, height: 'auto', y: 0 }} className="activity-row">
-                          <div className={cn('activity-icon', item.amount > 0 && 'positive')}>
-                            {item.kind === 'allowance' ? <ArrowDownLeft size={16} /> : item.kind === 'snack' ? <Utensils size={16} /> : <ShoppingBag size={16} />}
-                          </div>
-                          <div><strong>{item.title}</strong><span>{item.note}</span></div>
-                          <strong className={cn(item.amount > 0 && 'text-mint')}>{item.amount > 0 ? '+' : '−'}{money(Math.abs(item.amount))}</strong>
-                        </motion.div>
-                      ))}
+                      {child.activity.slice(0, 3).map(item => {
+                        const Icon = item.kind === 'allowance' ? ArrowDownLeft : (categories.find(c => c.id === item.kind)?.icon ?? ShoppingBag);
+                        return (
+                          <motion.div key={item.id} initial={{ opacity: 0, height: 0, y: -8 }} animate={{ opacity: 1, height: 'auto', y: 0 }} className="activity-row">
+                            <div className={cn('activity-icon', item.amount > 0 && 'positive')}><Icon size={16} /></div>
+                            <div><strong>{item.title}</strong><span>{item.note}</span></div>
+                            <strong className={cn(item.amount > 0 && 'text-mint')}>{item.amount > 0 ? '+' : '−'}{money(Math.abs(item.amount))}</strong>
+                          </motion.div>
+                        );
+                      })}
                     </AnimatePresence>
                   </div>
-                  <Button variant="outline" className="simulate-button" onClick={simulate}><Zap size={15} />Simuler une dépense<span>−8,50 €</span></Button>
+                  <Button variant="outline" className="simulate-button" onClick={() => runPurchase('food')}><Zap size={15} />Simuler une dépense<span>−{money(PURCHASES.food.cost)}</span></Button>
                 </div>
-                <div className="phone-bottom"><Wallet size={19} className="text-primary" /><span>Mon portefeuille</span><span className="home-indicator" /></div>
+                <div className="phone-bottom" aria-hidden="true"><Wallet size={19} className="text-primary" /><span>Mon portefeuille</span><span className="home-indicator" /></div>
               </div>
             </div>
-            <div className="sync-caption"><span /><span>Connectés, même à distance.</span><RefreshCw size={12} /></div>
+            <div className="sync-caption"><span /><span>Connectés, même à distance.</span><RefreshCw size={12} aria-hidden="true" /></div>
           </motion.section>
         </div>
 
@@ -424,26 +534,36 @@ function Index() {
 
       <Dialog open={selected !== null} onOpenChange={open => { if (!open) setSelected(null); }}>
         <DialogContent className="wallet-dialog">
-          <div className={cn('modal-icon', selected && !permissions[selected] && 'blocked')}>
-            {selected && !permissions[selected] ? <LockKeyhole size={25} /> : <ShieldCheck size={25} />}
+          <div className={cn('modal-icon', blocked && 'blocked')}>
+            {blocked ? <LockKeyhole size={25} /> : <ShieldCheck size={25} />}
           </div>
-          <DialogTitle>{selected && !permissions[selected] ? 'Une petite limite, pour le moment' : selectedCategory?.short}</DialogTitle>
+          <DialogTitle>{blocked ? 'Une petite limite, pour le moment' : selectedCategory?.short}</DialogTitle>
           <DialogDescription>
-            {selected && !permissions[selected]
-              ? 'Cette catégorie est temporairement restreinte par vos parents'
-              : 'Cette catégorie est autorisée. Tu peux y utiliser ton solde disponible en toute confiance.'}
+            {blocked
+              ? (pending ? 'Ta demande est partie. Tes parents vont te répondre.' : 'Cette catégorie est restreinte par tes parents. Dis-leur pourquoi tu en as besoin :')
+              : selected ? `Autorisé. Achat type : ${PURCHASES[selected].title} · ${money(PURCHASES[selected].cost)}.` : ''}
           </DialogDescription>
-          {selected && !permissions[selected] ? (
-            <Button className="modal-action" disabled={pending} onClick={requestUnlock}>
-              {pending ? 'Demande déjà envoyée' : 'Demander un déblocage exceptionnel'}<ArrowRight />
+          {blocked && !pending && (
+            <div className="reason-chips" role="radiogroup" aria-label="Motif de ta demande">
+              {REQUEST_REASONS.map(r => (
+                <button key={r} type="button" role="radio" aria-checked={reason === r} className={cn('reason-chip', reason === r && 'selected')} onClick={() => setReason(r)}>{r}</button>
+              ))}
+            </div>
+          )}
+          {blocked ? (
+            <Button className="modal-action" disabled={pending || !reason} onClick={sendRequest}>
+              {pending ? 'Demande envoyée · en attente' : reason ? 'Envoyer ma demande' : 'Choisis un motif'}<ArrowRight />
             </Button>
           ) : (
-            <Button className="modal-action" onClick={() => setSelected(null)}>C’est compris<Check /></Button>
+            <>
+              <Button className="modal-action" onClick={() => selected && runPurchase(selected)}>
+                Simuler cet achat<span className="modal-price">−{money(selected ? PURCHASES[selected].cost : 0)}</span>
+              </Button>
+              <Button variant="ghost" className="modal-action" onClick={() => setSelected(null)}>Fermer</Button>
+            </>
           )}
         </DialogContent>
       </Dialog>
     </div>
   );
 }
-
-     
