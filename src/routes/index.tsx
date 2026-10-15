@@ -49,27 +49,66 @@ function BalanceCard({ balance }: { balance: number }) {
   const py = useMotionValue(.5);
   const sx = useSpring(px, { stiffness: 220, damping: 26, mass: .6 });
   const sy = useSpring(py, { stiffness: 220, damping: 26, mass: .6 });
-  const rotateX = useTransform(sy, v => 3 + (.5 - v) * 13);
-  const rotateY = useTransform(sx, v => -4 + (v - .5) * 18);
-  const angle = useTransform(sx, v => 200 + (v - .5) * 180);
+  const rotateX = useTransform(sy, v => 6 + (.5 - v) * 16);
+  const rotateY = useTransform(sx, v => -6 + (v - .5) * 20);
+  const angle = useTransform(sx, v => 180 + (v - .5) * 180);
   const gx = useTransform(sx, v => `${(v * 100).toFixed(1)}%`);
   const gy = useTransform(sy, v => `${(v * 100).toFixed(1)}%`);
   const foil = useMotionTemplate`conic-gradient(from ${angle}deg at ${gx} ${gy}, transparent 6%, var(--primary) 24%, var(--mint) 38%, transparent 54%, var(--primary) 72%, transparent 88%)`;
-  const glare = useMotionTemplate`radial-gradient(140px circle at ${gx} ${gy}, var(--holo-shine), transparent 70%)`;
-  const track = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (reduced || e.pointerType !== 'mouse') return;
-    const r = e.currentTarget.getBoundingClientRect();
-    px.set((e.clientX - r.left) / r.width);
-    py.set((e.clientY - r.top) / r.height);
+  const glare = useMotionTemplate`radial-gradient(150px circle at ${gx} ${gy}, var(--holo-shine), transparent 70%)`;
+
+  // Réagit à la souris ET au doigt sur Android / iOS
+  const handleMove = (clientX: number, clientY: number, currentTarget: HTMLElement) => {
+    if (reduced) return;
+    const r = currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+    const y = Math.max(0, Math.min(1, (clientY - r.top) / r.height));
+    px.set(x);
+    py.set(y);
   };
-  const rest = () => { px.set(.5); py.set(.5); };
-  return <div className="holo-scene"><motion.div className="balance-card holo-card" style={{ rotateX, rotateY, transformPerspective: 900 }} onPointerMove={track} onPointerLeave={rest}>
-    <span className="holo-clip" aria-hidden="true"><motion.span className="holo-foil" style={{ background: foil }} /><span className="holo-weave" /><motion.span className="holo-glare" style={{ background: glare }} /><BrandK className="holo-k" /></span>
-    <span className="holo-flash" key={balance} aria-hidden="true" />
-    <div className="balance-top"><span>Ton solde disponible</span><Wallet size={17} /></div>
-    <div className="balance-number"><Balance value={balance} /></div>
-    <div className="balance-bottom"><span><span /> À toi de jouer</span><span>KIDO<span className="pay-word"> PAY</span></span></div>
-  </motion.div></div>;
+
+  const trackPointer = (e: ReactPointerEvent<HTMLDivElement>) => {
+    handleMove(e.clientX, e.clientY, e.currentTarget);
+  };
+
+  const trackTouch = (e: React.TouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0];
+    if (touch) handleMove(touch.clientX, touch.clientY, e.currentTarget);
+  };
+
+  const rest = () => {
+    px.set(.5);
+    py.set(.5);
+  };
+
+  return (
+    <div className="holo-scene">
+      <motion.div
+        className="balance-card holo-card"
+        style={{ rotateX, rotateY, transformPerspective: 900 }}
+        animate={reduced ? undefined : {
+          y: [-2, 3, -2],
+          rotateZ: [-0.5, 0.5, -0.5]
+        }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+        onPointerMove={trackPointer}
+        onPointerLeave={rest}
+        onTouchMove={trackTouch}
+        onTouchEnd={rest}
+      >
+        <span className="holo-clip" aria-hidden="true">
+          <motion.span className="holo-foil" style={{ background: foil }} />
+          <span className="holo-weave" />
+          <motion.span className="holo-glare" style={{ background: glare }} />
+          <BrandK className="holo-k" />
+        </span>
+        <span className="holo-flash" key={balance} aria-hidden="true" />
+        <div className="balance-top"><span>Ton solde disponible</span><Wallet size={17} /></div>
+        <div className="balance-number"><Balance value={balance} /></div>
+        <div className="balance-bottom"><span><span /> Carte active</span><span>KIDO<span className="pay-word"> PAY</span></span></div>
+      </motion.div>
+    </div>
+  );
 }
 
 function Index() {
