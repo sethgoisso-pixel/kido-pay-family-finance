@@ -429,3 +429,53 @@ h4 { font-weight: 600; font-size: 10px; }
 a[href*="lovable.dev"] {
   display: none !important;
 }
+/* Sélecteur multi-enfants */
+.child-selector-bar {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  background: var(--surface-raised);
+  padding: 6px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+}
+
+.child-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.child-tab.active {
+  background: var(--background);
+  color: var(--foreground);
+  box-shadow: 0 2px 8px oklch(0 0 0 / 0.15);
+}
+
+.child-avatar-mini {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+
+.child-age {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
