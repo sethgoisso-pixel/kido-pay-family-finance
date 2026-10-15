@@ -59,7 +59,7 @@ function BalanceCard({ balance }: { balance: number }) {
   };
   const rest = () => { px.set(.5); py.set(.5); };
   return <div className="holo-scene"><motion.div className="balance-card holo-card" style={{ rotateX, rotateY, transformPerspective: 900 }} onPointerMove={track} onPointerLeave={rest}>
-    <span className="holo-clip" aria-hidden="true"><span className="holo-foil" style={{ background: foil }} /><span className="holo-weave" /><span className="holo-glare" style={{ background: glare }} /><BrandK className="holo-k" /></span>
+    <span className="holo-clip" aria-hidden="true"><motion.span className="holo-foil" style={{ background: foil }} /><span className="holo-weave" /><motion.span className="holo-glare" style={{ background: glare }} /><BrandK className="holo-k" /></span>
     <span className="holo-flash" key={balance} aria-hidden="true" />
     <div className="balance-top"><span>Ton solde disponible</span><Wallet size={17} /></div>
     <div className="balance-number"><Balance value={balance} /></div>
