@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
-import { AnimatePresence, animate, motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { AnimatePresence, animate, motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, Bell, Bus, Check, ChevronDown, CircleHelp, CreditCard, Gamepad2, Heart, Home, LockKeyhole, MonitorSmartphone, Moon, MoreHorizontal, Plus, Radio, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Sun, Users, Utensils, Wallet, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -10,6 +10,7 @@ import { Toaster, toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ALLOWANCE_MAX, ALLOWANCE_MIN, INITIAL_BALANCE, INITIAL_PERMISSIONS, decideRequest, spendSnack, type CategoryId } from '@/lib/wallet';
 import leo from '@/assets/leo.jpg';
+import { BrandK, BrandMark } from '@/components/brand-mark';
 
 export const Route = createFileRoute('/')({
   head: () => ({ meta: [
@@ -36,6 +37,34 @@ function Balance({ value }: { value: number }) {
   const reduced = useReducedMotion();
   useEffect(() => { const control = animate(display, value, { duration: reduced ? 0 : .65, onUpdate: setDisplay }); return () => control.stop(); }, [value, reduced]);
   return <span aria-live="polite" aria-label={`Solde ${money(value)}`}>{money(Math.round(display))}</span>;
+}
+function BalanceCard({ balance }: { balance: number }) {
+  const reduced = useReducedMotion();
+  const px = useMotionValue(.5);
+  const py = useMotionValue(.5);
+  const sx = useSpring(px, { stiffness: 220, damping: 26, mass: .6 });
+  const sy = useSpring(py, { stiffness: 220, damping: 26, mass: .6 });
+  const rotateX = useTransform(sy, v => 3 + (.5 - v) * 13);
+  const rotateY = useTransform(sx, v => -4 + (v - .5) * 18);
+  const angle = useTransform(sx, v => 200 + (v - .5) * 180);
+  const gx = useTransform(sx, v => `${(v * 100).toFixed(1)}%`);
+  const gy = useTransform(sy, v => `${(v * 100).toFixed(1)}%`);
+  const foil = useMotionTemplate`conic-gradient(from ${angle}deg at ${gx} ${gy}, transparent 6%, var(--primary) 24%, var(--mint) 38%, transparent 54%, var(--primary) 72%, transparent 88%)`;
+  const glare = useMotionTemplate`radial-gradient(140px circle at ${gx} ${gy}, var(--holo-shine), transparent 70%)`;
+  const track = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (reduced || e.pointerType !== 'mouse') return;
+    const r = e.currentTarget.getBoundingClientRect();
+    px.set((e.clientX - r.left) / r.width);
+    py.set((e.clientY - r.top) / r.height);
+  };
+  const rest = () => { px.set(.5); py.set(.5); };
+  return <div className="holo-scene"><motion.div className="balance-card holo-card" style={{ rotateX, rotateY, transformPerspective: 900 }} onPointerMove={track} onPointerLeave={rest}>
+    <span className="holo-clip" aria-hidden="true"><span className="holo-foil" style={{ background: foil }} /><span className="holo-weave" /><span className="holo-glare" style={{ background: glare }} /><BrandK className="holo-k" /></span>
+    <span className="holo-flash" key={balance} aria-hidden="true" />
+    <div className="balance-top"><span>Ton solde disponible</span><Wallet size={17} /></div>
+    <div className="balance-number"><Balance value={balance} /></div>
+    <div className="balance-bottom"><span><span /> À toi de jouer</span><span>KIDO<span className="pay-word"> PAY</span></span></div>
+  </motion.div></div>;
 }
 function Index() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -78,7 +107,7 @@ function Index() {
   return <div className="app-shell bg-background text-foreground">
     <Toaster theme={theme} position="bottom-center" richColors />
     <header className="topbar">
-      <div className="brand-group"><div className="brand-icon"><Zap size={22} fill="currentColor" /></div><div><div className="brand-name">KIDO<span> PAY</span><span className="brand-dot" /></div><p className="brand-tagline">Finance parentale & autonomie ado</p></div></div>
+      <div className="brand-group"><BrandMark /><div><div className="brand-name">KIDO<span> PAY</span><span className="brand-dot" /></div><p className="brand-tagline">Finance parentale & autonomie ado</p></div></div>
       <div className="desktop-role-switch" aria-label="Vue du compte">
         <Button variant="ghost" className={cn('role-button', view === 'parent' && 'selected')} onClick={() => changeView('parent')}><Users />Vue Parent</Button>
         <Button variant="ghost" className={cn('role-button', view === 'teen' && 'selected')} onClick={() => changeView('teen')}><Wallet />Vue Ado</Button>
@@ -114,7 +143,7 @@ function Index() {
           <div className="column-heading"><div className="column-label"><span className="heading-icon"><Smartphone size={17} /></span><h2>Dans la poche de Léo</h2></div><span className="field-label preview-caption">Aperçu en direct</span></div>
           <div className="phone-surround"><div className="phone-frame"><div className="phone-status"><span>9:41</span><div className="dynamic-island" /><span className="phone-signals"><Radio size={13} /><span className="battery" /></span></div>
             <div className="phone-content"><div className="teen-header"><div><p>TON ESPACE, TES PROJETS</p><h3>Salut Léo <span className="wave">✌️</span></h3></div><div className="teen-avatar"><img src={leo} alt="Léo" width={43} height={43} /><span /></div></div>
-              <div className="balance-card"><div className="balance-top"><span>Ton solde disponible</span><Wallet size={17} /></div><div className="balance-number"><Balance value={balance} /></div><div className="balance-bottom"><span><span /> À toi de jouer</span><span>KIDO<span className="pay-word"> PAY</span></span></div><div className="card-mark"><span /><span /><span /></div></div>
+              <BalanceCard balance={balance} />
               <div className="teen-allowance"><div className="mini-icon"><ArrowDownLeft size={16} /></div><div><strong>Le prochain petit boost</strong><span>{frequency === 'weekly' ? 'Lundi prochain' : 'Le 1er du mois'}</span></div><strong>+{allowance} €</strong></div>
               <div className="wallet-section-heading"><h4>Où tu peux dépenser</h4><span>{Object.values(permissions).filter(Boolean).length}/5 actives</span></div>
               <div className="teen-categories">{categories.map(category => <motion.div layout={!reduced} key={category.id} animate={{ opacity: permissions[category.id] ? 1 : .75 }}><Button variant="ghost" aria-label={`${category.short} — ${permissions[category.id] ? 'autorisée' : 'bloquée'}`} onClick={() => setSelected(category.id)} className={cn('teen-category', !permissions[category.id] && 'locked')}><span className="teen-category-top"><category.icon size={20} />{permissions[category.id] ? <span className="active-dot" /> : <LockKeyhole size={13} />}</span><strong>{category.short}</strong><span className="category-state">{permissions[category.id] ? 'C’est permis' : 'Bloqué par les parents'}</span></Button></motion.div>)}</div>
