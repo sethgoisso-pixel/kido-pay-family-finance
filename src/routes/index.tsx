@@ -28,7 +28,7 @@ import {
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, animate, motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion';
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, Bell, Bus, Check, CircleHelp, Gamepad2, Heart, LockKeyhole, MoreHorizontal, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Sun, Moon, Target, Users, Utensils, Wallet, X, Zap } from 'lucide-react';
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, Bell, Bus, Check, ChevronDown, CircleHelp, Gamepad2, Heart, LockKeyhole, MoreHorizontal, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Sun, Moon, Target, Users, Utensils, Wallet, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -196,6 +196,42 @@ function RequestCard({ request, childId, childName, onDecide }: {
   );
 }
 
+type GuideAction = 'rules' | 'askGames' | 'requests' | 'simulate';
+
+const GUIDE_STEPS: { title: string; text: string; action?: { label: string; key: GuideAction } }[] = [
+  { title: 'Le parent pose une règle', text: 'Dans « Restrictions & plafonds », chaque interrupteur bloque ou autorise une catégorie. Ici, Jeux vidéo est déjà bloqué.', action: { label: 'Voir l’espace parent', key: 'rules' } },
+  { title: 'Léo se heurte à la limite', text: 'Côté ado, il touche « Jeux vidéo » : un message bienveillant, pas un refus sec. Il choisit un motif et envoie sa demande.', action: { label: 'Essayer côté ado', key: 'askGames' } },
+  { title: 'Le parent répond en un tap', text: 'Dans le « Centre de demandes » : Oui, une fois · Jusqu’à 10 € · Pas maintenant (avec une raison).', action: { label: 'Voir les demandes', key: 'requests' } },
+  { title: 'Léo voit la réponse', text: 'Un bandeau lui explique la décision. Avec « Oui, une fois », la catégorie se reverrouille après un achat.' },
+  { title: 'Chaque achat a un sens', text: 'Le solde baisse en direct et l’appli montre l’effet sur son objectif d’épargne.', action: { label: 'Simuler −8,50 €', key: 'simulate' } },
+];
+
+function DemoGuide({ open, onToggle, onAction }: { open: boolean; onToggle: () => void; onAction: (key: GuideAction) => void }) {
+  return (
+    <section className="demo-guide" aria-labelledby="guide-title">
+      <button type="button" className="demo-guide-head" aria-expanded={open} aria-controls="guide-body" onClick={onToggle}>
+        <span className="guide-title-wrap"><Sparkles size={17} aria-hidden="true" /><strong id="guide-title">Guide de la démo</strong><span className="small-tag">≈ 1 min</span></span>
+        <span className="guide-toggle">{open ? 'Masquer' : 'Voir les 5 étapes'}<ChevronDown size={16} aria-hidden="true" className={cn(open && 'rotated')} /></span>
+      </button>
+      <div id="guide-body" className="demo-guide-body" hidden={!open}>
+        <p className="guide-intro">Une famille, deux écrans synchronisés en direct : tout ce que fait le parent apparaît tout de suite chez l’ado, et inversement. Suis l’histoire de Léo.</p>
+        <ol className="guide-steps">
+          {GUIDE_STEPS.map(step => {
+            const action = step.action;
+            return (
+              <li key={step.title}>
+                <div><strong>{step.title}</strong><p>{step.text}</p></div>
+                {action && <Button variant="outline" size="sm" onClick={() => onAction(action.key)}>{action.label}<ArrowRight /></Button>}
+              </li>
+            );
+          })}
+        </ol>
+        <p className="guide-note">À tester aussi : le profil d’Emma (13 ans, règles plus strictes), les virements instantanés, le thème clair/sombre (en haut à droite) et « Réinitialiser la démo » (en bas de page) pour rejouer. Menthe = argent, indigo = actions, rouge = restrictions.</p>
+      </div>
+    </section>
+  );
+}
+
 function Index() {
   const [childId, setChildId] = useState<ChildId>('leo');
   const [states, setStates] = useState<Record<ChildId, ChildState>>(createAllStates);
@@ -206,6 +242,7 @@ function Index() {
   const [mobileView, setMobileView] = useState<'parent' | 'teen'>('parent');
   const [selected, setSelected] = useState<CategoryId | null>(null);
   const [reason, setReason] = useState('');
+  const [guideOpen, setGuideOpen] = useState(true);
   const reduced = useReducedMotion();
 
   const update = (id: ChildId, fn: (s: ChildState) => ChildState) =>
@@ -214,6 +251,8 @@ function Index() {
   // Thème système au premier chargement, puis choix manuel
   useEffect(() => {
     if (window.matchMedia('(prefers-color-scheme: light)').matches) setTheme('light');
+    // Sur téléphone, le guide démarre replié pour ne pas pousser la démo hors de l'écran
+    if (window.matchMedia('(max-width: 767px)').matches) setGuideOpen(false);
   }, []);
 
   useEffect(() => {
@@ -281,6 +320,23 @@ function Index() {
     toast.success('La démo est réinitialisée');
   };
 
+  const goTo = (target: 'parent' | 'teen') => {
+    const mobile = window.matchMedia('(max-width: 767px)').matches;
+    setMobileView(target);
+    setView(mobile ? target : 'both');
+  };
+
+  const scrollToId = (id: string) => {
+    window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }), 150);
+  };
+
+  const guideAction = (key: GuideAction) => {
+    if (key === 'rules') { goTo('parent'); scrollToId('regles'); }
+    if (key === 'askGames') { goTo('teen'); openCategory('games'); }
+    if (key === 'requests') { goTo('parent'); scrollToId('centre-demandes'); }
+    if (key === 'simulate') { goTo('teen'); runPurchase('food'); }
+  };
+
   const selectedCategory = categories.find(c => c.id === selected);
   const blocked = selected !== null && isBlocked(child, selected);
   const pending = selected !== null && hasRequest(child, selected);
@@ -328,6 +384,8 @@ function Index() {
             <div><strong>{currentChild.name} Dubois</strong><span>Compte ado · {currentChild.age} ans</span></div>
           </div>
         </div>
+
+        <DemoGuide open={guideOpen} onToggle={() => setGuideOpen(o => !o)} onAction={guideAction} />
 
         <div className={cn('workspace', `view-${view}`, `mobile-${mobileView}`)}>
           <motion.section layout={!reduced} className="parent-panel" aria-label="Contrôles parentaux">
@@ -387,7 +445,7 @@ function Index() {
               </div>
             </div>
 
-            <div className="restrictions-section">
+            <div className="restrictions-section" id="regles">
               <div className="section-title">
                 <div><span className="section-icon"><ShieldCheck size={18} /></span><h3>Restrictions & plafonds</h3></div>
                 <span title="Catégories autorisées" className="muted-icon"><CircleHelp size={16} aria-hidden="true" /></span>
@@ -414,7 +472,7 @@ function Index() {
               <div className="security-note"><ShieldCheck size={14} /><span>Vos règles s’appliquent instantanément au compte de {currentChild.name}.</span></div>
             </div>
 
-            <div className="requests-section">
+            <div className="requests-section" id="centre-demandes">
               <div className="section-title">
                 <div><span className="section-icon"><Bell size={18} /></span><h3>Centre de demandes</h3><span className="count-tag">{allRequests.length}</span></div>
                 <span className="field-label">En temps réel</span>
