@@ -135,7 +135,7 @@ function BalanceCard({ balance }: { balance: number }) {
       <motion.div
         className="balance-card holo-card"
         style={{ rotateX, rotateY, transformPerspective: 900 }}
-        animate={reduced ? undefined : {
+        animate={reduced ? { y: 0, rotateZ: 0 } : {
           y: [-2, 3, -2],
           rotateZ: [-0.5, 0.5, -0.5]
         }}
