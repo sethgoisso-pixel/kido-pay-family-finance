@@ -115,7 +115,7 @@ export const CHILDREN: ChildData[] = [
     initialActivity: [
       { id: 1, title: 'Pocket money', note: '1st of the month', amount: 1500, kind: 'allowance' },
       { id: 2, title: 'Gift from Grandma', note: '3 days ago', amount: 1000, kind: 'allowance' },
-      { id: 3, title: 'Bus ticket', note: 'Il y a 4 jours', amount: -650, kind: 'transport' },
+      { id: 3, title: 'Bus ticket', note: '4 days ago', amount: -650, kind: 'transport' },
     ],
   },
 ];
