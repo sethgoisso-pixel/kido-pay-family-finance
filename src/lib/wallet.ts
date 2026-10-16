@@ -15,15 +15,15 @@ export type Permissions = Record<CategoryId, boolean>;
 
 /** Achat type simulé pour chaque catégorie (montants en centimes). */
 export const PURCHASES: Record<CategoryId, { title: string; cost: number }> = {
-  food: { title: 'Pause snack', cost: 850 },
-  games: { title: 'Skin de jeu', cost: 1000 },
+  food: { title: 'Snack break', cost: 850 },
+  games: { title: 'Game skin', cost: 1000 },
   shopping: { title: 'Vinted', cost: 1200 },
-  transport: { title: 'Ticket de bus', cost: 200 },
-  subscriptions: { title: 'Abonnement musique', cost: 999 },
+  transport: { title: 'Bus ticket', cost: 200 },
+  subscriptions: { title: 'Music subscription', cost: 999 },
 };
 
-export const REQUEST_REASONS = ['Pour un projet', 'Avec des amis', "J'ai économisé pour ça", 'Autre'] as const;
-export const DECLINE_REASONS = ['On en reparle ce week-end', 'Pas ce mois-ci', 'Parlons-en ensemble'] as const;
+export const REQUEST_REASONS = ['For a project', 'With friends', 'I saved up for it', 'Other'] as const;
+export const DECLINE_REASONS = ["Let's talk this weekend", 'Not this month', "Let's discuss it together"] as const;
 
 /** Déblocage temporaire accordé par le parent. */
 export type Grant = { kind: 'once' } | { kind: 'cap'; remaining: number };
@@ -96,11 +96,11 @@ export const CHILDREN: ChildData[] = [
     initialAllowance: 35,
     initialFrequency: 'weekly',
     initialPermissions: { food: true, games: false, shopping: true, transport: true, subscriptions: true },
-    goal: { name: 'Casque gaming', target: 6000 },
+    goal: { name: 'Gaming headset', target: 6000 },
     initialActivity: [
-      { id: 1, title: 'Argent de poche', note: 'Aujourd’hui, 09:00', amount: 3500, kind: 'allowance' },
-      { id: 2, title: 'Boulangerie Paul', note: 'Hier, 16:42', amount: -450, kind: 'food' },
-      { id: 3, title: 'Vinted', note: 'Hier, 12:15', amount: -1200, kind: 'shopping' },
+      { id: 1, title: 'Pocket money', note: 'Today, 09:00', amount: 3500, kind: 'allowance' },
+      { id: 2, title: 'Paul Bakery', note: 'Yesterday, 4:42 PM', amount: -450, kind: 'food' },
+      { id: 3, title: 'Vinted', note: 'Yesterday, 12:15 PM', amount: -1200, kind: 'shopping' },
     ],
   },
   {
@@ -111,11 +111,11 @@ export const CHILDREN: ChildData[] = [
     initialAllowance: 15,
     initialFrequency: 'monthly',
     initialPermissions: { food: true, games: false, shopping: false, transport: true, subscriptions: false },
-    goal: { name: 'Enceinte Bluetooth', target: 4000 },
+    goal: { name: 'Bluetooth speaker', target: 4000 },
     initialActivity: [
-      { id: 1, title: 'Argent de poche', note: 'Le 1er du mois', amount: 1500, kind: 'allowance' },
-      { id: 2, title: 'Cadeau de mamie', note: 'Il y a 3 jours', amount: 1000, kind: 'allowance' },
-      { id: 3, title: 'Ticket de bus', note: 'Il y a 4 jours', amount: -650, kind: 'transport' },
+      { id: 1, title: 'Pocket money', note: '1st of the month', amount: 1500, kind: 'allowance' },
+      { id: 2, title: 'Gift from Grandma', note: '3 days ago', amount: 1000, kind: 'allowance' },
+      { id: 3, title: 'Bus ticket', note: 'Il y a 4 jours', amount: -650, kind: 'transport' },
     ],
   },
 ];
@@ -158,7 +158,7 @@ export function sendMoney(state: ChildState, euros: number): ChildState {
     ...state,
     balance: state.balance + cents,
     activity: [
-      { id: nextId(), title: 'Virement de Papa', note: 'À l’instant · Coup de pouce', amount: cents, kind: 'allowance' },
+      { id: nextId(), title: 'Transfer from Dad', note: 'Just now · Boost', amount: cents, kind: 'allowance' },
       ...state.activity,
     ],
   };
@@ -245,7 +245,7 @@ export function purchase(state: ChildState, category: CategoryId): PurchaseResul
       ...state,
       balance: state.balance - cost,
       grants,
-      activity: [{ id: nextId(), title, note: 'À l’instant', amount: -cost, kind: category }, ...state.activity],
+      activity: [{ id: nextId(), title, note: 'Just now', amount: -cost, kind: category }, ...state.activity],
       impact: { days: delayDays(cost, state.allowance, state.frequency), title },
     },
   };

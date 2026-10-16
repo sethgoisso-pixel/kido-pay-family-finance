@@ -40,39 +40,39 @@ import { BrandK, BrandMark } from '@/components/brand-mark';
 
 export const Route = createFileRoute('/')({
   head: () => ({ meta: [
-    { title: 'KIDO PAY — Votre confiance, son autonomie' },
-    { name: 'description', content: 'Un espace financier partagé pour les parents et les ados : argent de poche, catégories et demandes synchronisées.' },
-    { property: 'og:title', content: 'KIDO PAY — Votre confiance, son autonomie' },
-    { property: 'og:description', content: 'Gérez l’argent de poche en famille avec un portefeuille ado synchronisé.' },
+    { title: 'KIDO PAY — Your trust, their independence' },
+    { name: 'description', content: 'A shared money space for parents and teens: pocket money, spending categories and requests, synced live.' },
+    { property: 'og:title', content: 'KIDO PAY — Your trust, their independence' },
+    { property: 'og:description', content: 'Manage pocket money as a family with a synced teen wallet.' },
     { property: 'og:type', content: 'website' }, { name: 'twitter:card', content: 'summary_large_image' },
   ] }), component: Index,
 });
 
 const categories = [
-  { id: 'food', title: 'Restauration & Fast-Food', short: 'Restauration', icon: Utensils, note: 'Les petits plaisirs du quotidien' },
-  { id: 'games', title: 'Jeux Vidéo & Steam', short: 'Jeux vidéo', icon: Gamepad2, note: 'Gaming, jeux et achats intégrés' },
-  { id: 'shopping', title: 'Shopping en ligne', short: 'Shopping', icon: ShoppingBag, note: 'Mode, accessoires et e-commerce' },
-  { id: 'transport', title: 'Transports', short: 'Transports', icon: Bus, note: 'Pour bouger en toute liberté' },
-  { id: 'subscriptions', title: 'Abonnements & Services', short: 'Abonnements', icon: Smartphone, note: 'Musique, streaming et services' },
+  { id: 'food', title: 'Food & Fast-Food', short: 'Food', icon: Utensils, note: 'Everyday little treats' },
+  { id: 'games', title: 'Video Games & Steam', short: 'Gaming', icon: Gamepad2, note: 'Games and in-app purchases' },
+  { id: 'shopping', title: 'Online Shopping', short: 'Shopping', icon: ShoppingBag, note: 'Fashion, accessories and e-commerce' },
+  { id: 'transport', title: 'Transport', short: 'Transport', icon: Bus, note: 'Getting around freely' },
+  { id: 'subscriptions', title: 'Subscriptions & Services', short: 'Subscriptions', icon: Smartphone, note: 'Music, streaming and services' },
 ] as const;
 
 type View = 'parent' | 'teen' | 'both';
 
-const money = (cents: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(cents / 100);
+const money = (cents: number) => new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(cents / 100);
 const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const categoryName = (id: CategoryId) => categories.find(c => c.id === id)?.short ?? '';
 
 function grantText(grant: Grant | undefined) {
   if (!grant) return null;
-  return grant.kind === 'once' ? 'Débloqué pour 1 achat' : `Débloqué · ${money(grant.remaining)} max`;
+  return grant.kind === 'once' ? 'Unlocked for 1 purchase' : `Unlocked · ${money(grant.remaining)} max`;
 }
 
 function replyText(reply: Reply) {
   const name = categoryName(reply.category);
   const d = reply.decision;
-  if (d.kind === 'once') return `Tes parents disent oui, une fois, pour « ${name} ».`;
-  if (d.kind === 'cap') return `Tes parents disent oui, jusqu’à ${money(d.amount)} pour « ${name} ».`;
-  return `Pas maintenant pour « ${name} » : ${d.reason}.`;
+  if (d.kind === 'once') return `Your parents said yes, once, for “${name}”.`;
+  if (d.kind === 'cap') return `Your parents said yes, up to ${money(d.amount)} for “${name}”.`;
+  return `Not now for “${name}”: ${d.reason}.`;
 }
 
 function ChildAvatar({ id, name, size }: { id: ChildId; name: string; size: number }) {
@@ -87,7 +87,7 @@ function Balance({ value }: { value: number }) {
   return (
     <>
       <span aria-hidden="true">{money(Math.round(display))}</span>
-      <span className="sr-only" role="status">{`Solde : ${money(value)}`}</span>
+      <span className="sr-only" role="status">{`Balance: ${money(value)}`}</span>
     </>
   );
 }
@@ -152,9 +152,9 @@ function BalanceCard({ balance }: { balance: number }) {
           <BrandK className="holo-k" />
         </span>
         <span className="holo-flash" key={balance} aria-hidden="true" />
-        <div className="balance-top"><span>Ton solde disponible</span><Wallet size={17} aria-hidden="true" /></div>
+        <div className="balance-top"><span>Your available balance</span><Wallet size={17} aria-hidden="true" /></div>
         <div className="balance-number"><Balance value={balance} /></div>
-        <div className="balance-bottom"><span><span /> Carte active</span><span>KIDO<span className="pay-word"> PAY</span></span></div>
+        <div className="balance-bottom"><span><span /> Card active</span><span>KIDO<span className="pay-word"> PAY</span></span></div>
       </motion.div>
     </div>
   );
@@ -172,24 +172,24 @@ function RequestCard({ request, childId, childName, onDecide }: {
     <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: .97 }} className="request-item">
       <ChildAvatar id={childId} name={childName} size={36} />
       <div>
-        <strong>{childName} demande : {categoryName(request.category)}</strong>
-        <p>Motif : {request.reason}</p>
+        <strong>{childName} asks for: {categoryName(request.category)}</strong>
+        <p>Reason: {request.reason}</p>
       </div>
       {declining ? (
-        <div className="request-declines" role="group" aria-label="Que répondre ?">
-          <span className="field-label">Que lui répondre ?</span>
+        <div className="request-declines" role="group" aria-label="How to reply?">
+          <span className="field-label">What should we say?</span>
           <div className="request-actions">
             {DECLINE_REASONS.map(reason => (
               <Button key={reason} variant="outline" size="sm" onClick={() => onDecide(childId, request.id, { kind: 'later', reason })}>{reason}</Button>
             ))}
-            <Button variant="ghost" size="sm" onClick={() => setDeclining(false)}>Retour</Button>
+            <Button variant="ghost" size="sm" onClick={() => setDeclining(false)}>Back</Button>
           </div>
         </div>
       ) : (
         <div className="request-actions">
-          <Button size="sm" onClick={() => onDecide(childId, request.id, { kind: 'once' })}><Check />Oui, une fois</Button>
-          <Button variant="outline" size="sm" onClick={() => onDecide(childId, request.id, { kind: 'cap', amount: UNLOCK_CAP })}>Jusqu’à {money(UNLOCK_CAP)}</Button>
-          <Button variant="ghost" size="sm" onClick={() => setDeclining(true)}>Pas maintenant</Button>
+          <Button size="sm" onClick={() => onDecide(childId, request.id, { kind: 'once' })}><Check />Yes, once</Button>
+          <Button variant="outline" size="sm" onClick={() => onDecide(childId, request.id, { kind: 'cap', amount: UNLOCK_CAP })}>Up to {money(UNLOCK_CAP)}</Button>
+          <Button variant="ghost" size="sm" onClick={() => setDeclining(true)}>Not now</Button>
         </div>
       )}
     </motion.div>
@@ -203,24 +203,24 @@ type GuideStep = { title: string; text: string; action?: { label: string; key: G
 function buildGuideSteps(name: string, blocked: string | null, spend: { name: string; cost: number } | null): GuideStep[] {
   return [
     {
-      title: 'Le parent pose une règle',
+      title: 'The parent sets a rule',
       text: blocked
-        ? `Dans « Restrictions & plafonds », chaque interrupteur bloque ou autorise une catégorie. Pour ${name}, « ${blocked} » est bloqué.`
-        : `Dans « Restrictions & plafonds », chaque interrupteur bloque ou autorise une catégorie. Rien n'est bloqué pour ${name} : essaie d'en bloquer une.`,
-      action: { label: 'Voir l’espace parent', key: 'rules' },
+        ? `In “Restrictions & limits”, each switch blocks or allows a category. For ${name}, “${blocked}” is blocked.`
+        : `In “Restrictions & limits”, each switch blocks or allows a category. Nothing is blocked for ${name}: try blocking one.`,
+      action: { label: 'See parent space', key: 'rules' },
     },
     {
-      title: `${name} se heurte à la limite`,
+      title: `${name} hits the limit`,
       text: blocked
-        ? `Côté ado, ${name} touche « ${blocked} » : un message bienveillant, pas un refus sec. Un motif en un tap, et la demande part.`
-        : `Aucune catégorie n'est bloquée : le bouton en bloque une pour la démo, puis ouvre le côté ado.`,
-      action: { label: blocked ? 'Essayer côté ado' : 'Bloquer une catégorie et essayer', key: 'ask' },
+        ? `On the teen side, ${name} taps “${blocked}”: a kind message, not a flat no. One tap for a reason, and the request is sent.`
+        : `No category is blocked: this button blocks one for the demo, then opens the teen side.`,
+      action: { label: blocked ? 'Try the teen side' : 'Block a category and try', key: 'ask' },
     },
-    { title: 'Le parent répond en un tap', text: 'Dans le « Centre de demandes » : Oui, une fois · Jusqu’à 10 € · Pas maintenant (avec une raison).', action: { label: 'Voir les demandes', key: 'requests' } },
-    { title: `${name} voit la réponse`, text: 'Un bandeau explique la décision. Avec « Oui, une fois », la catégorie se reverrouille après un achat.' },
+    { title: 'The parent replies in one tap', text: 'In the “Request center”: Yes, once · Up to €10 · Not now (with a reason).', action: { label: 'See requests', key: 'requests' } },
+    { title: `${name} sees the answer`, text: 'A banner explains the decision. With “Yes, once”, the category locks again after one purchase.' },
     spend
-      ? { title: 'Chaque achat a un sens', text: `Le solde baisse en direct et l’appli montre l’effet sur l’objectif d’épargne de ${name}.`, action: { label: `Simuler ${spend.name} · −${money(spend.cost)}`, key: 'simulate' } }
-      : { title: 'Chaque achat a un sens', text: 'Toutes les catégories sont bloquées : débloques-en une côté parent pour simuler un achat.' },
+      ? { title: 'Every purchase counts', text: `The balance drops live and the app shows the impact on ${name}’s savings goal.`, action: { label: `Simulate ${spend.name} · −${money(spend.cost)}`, key: 'simulate' } }
+      : { title: 'Every purchase counts', text: 'All categories are blocked: unlock one on the parent side to simulate a purchase.' },
   ];
 }
 
@@ -228,11 +228,11 @@ function DemoGuide({ open, name, steps, onToggle, onAction }: { open: boolean; n
   return (
     <section className="demo-guide" aria-labelledby="guide-title">
       <button type="button" className="demo-guide-head" aria-expanded={open} aria-controls="guide-body" onClick={onToggle}>
-        <span className="guide-title-wrap"><Sparkles size={17} aria-hidden="true" /><strong id="guide-title">Guide de la démo</strong><span className="small-tag">≈ 1 min</span></span>
-        <span className="guide-toggle">{open ? 'Masquer' : 'Voir les 5 étapes'}<ChevronDown size={16} aria-hidden="true" className={cn(open && 'rotated')} /></span>
+        <span className="guide-title-wrap"><Sparkles size={17} aria-hidden="true" /><strong id="guide-title">Demo guide</strong><span className="small-tag">≈ 1 min</span></span>
+        <span className="guide-toggle">{open ? 'Hide' : 'See the 5 steps'}<ChevronDown size={16} aria-hidden="true" className={cn(open && 'rotated')} /></span>
       </button>
       <div id="guide-body" className="demo-guide-body" hidden={!open}>
-        <p className="guide-intro">Une famille, deux écrans synchronisés en direct : tout ce que fait le parent apparaît tout de suite chez l’ado, et inversement. Suis l’histoire de {name}.</p>
+        <p className="guide-intro">One family, two screens synced live: everything the parent does shows up instantly for the teen, and vice versa. Follow {name}’s story.</p>
         <ol className="guide-steps">
           {steps.map(step => {
             const action = step.action;
@@ -244,7 +244,7 @@ function DemoGuide({ open, name, steps, onToggle, onAction }: { open: boolean; n
             );
           })}
         </ol>
-        <p className="guide-note">À tester aussi : le profil d’Emma (13 ans, règles plus strictes), les virements instantanés, le thème clair/sombre (en haut à droite) et « Réinitialiser la démo » (en bas de page) pour rejouer. Menthe = argent, indigo = actions, rouge = restrictions.</p>
+        <p className="guide-note">Also try: Emma’s profile (13, stricter rules), instant transfers, light/dark theme (top right) and “Reset demo” (bottom of page) to replay. Mint = money, indigo = actions, red = restrictions.</p>
       </div>
     </section>
   );
@@ -284,18 +284,18 @@ function Index() {
     setChildId(id);
     setSelected(null);
     const next = CHILDREN.find(c => c.id === id);
-    if (next) toast.success(`Compte de ${next.name} sélectionné`);
+    if (next) toast.success(`${next.name}’s account selected`);
   };
 
   const sendInstantMoney = (amountEuros: number) => {
     update(childId, s => sendMoney(s, amountEuros));
-    toast.success(`Virement de +${amountEuros} € envoyé à ${currentChild.name} !`);
+    toast.success(`+€${amountEuros} sent to ${currentChild.name}!`);
   };
 
   const changeView = (next: View) => {
     setView(next);
     if (next !== 'both') setMobileView(next);
-    toast.success('Tout est synchronisé', { description: 'Les changements sont visibles en temps réel.' });
+    toast.success('Everything is in sync', { description: 'Changes appear in real time.' });
   };
 
   const openCategory = (id: CategoryId) => {
@@ -307,35 +307,35 @@ function Index() {
     if (!selected || !reason) return;
     update(childId, s => createRequest(s, selected, reason));
     setSelected(null);
-    toast.success('Demande envoyée à tes parents');
+    toast.success('Request sent to your parents');
   };
 
   const decide = (id: ChildId, requestId: number, decision: Decision) => {
     const name = CHILDREN.find(c => c.id === id)?.name ?? '';
     update(id, s => decideRequest(s, requestId, decision));
-    if (decision.kind === 'later') toast('Réponse envoyée', { description: `${name} verra : « ${decision.reason} »` });
-    else toast.success(decision.kind === 'once' ? `Débloqué une fois pour ${name}` : `Débloqué jusqu’à ${money(decision.amount)} pour ${name}`);
+    if (decision.kind === 'later') toast('Reply sent', { description: `${name} will see: “${decision.reason}”` });
+    else toast.success(decision.kind === 'once' ? `Unlocked once for ${name}` : `Unlocked up to ${money(decision.amount)} for ${name}`);
   };
 
   const runPurchase = (category: CategoryId) => {
     const result = purchase(child, category);
     if (!result.ok) {
       if (result.reason === 'blocked') { openCategory(category); return; }
-      toast.error(result.reason === 'insufficient' ? 'Solde insuffisant pour cette dépense' : 'Cet achat dépasse le plafond accordé');
+      toast.error(result.reason === 'insufficient' ? 'Not enough balance for this purchase' : 'This purchase exceeds the approved limit');
       return;
     }
     update(childId, () => result.state);
     setSelected(null);
     const { title, cost } = PURCHASES[category];
     const days = result.state.impact?.days ?? 0;
-    toast.success(`${title} · −${money(cost)}`, { description: days > 0 ? `Ça repousse ton objectif de ${plural(days, 'jour')}.` : undefined });
+    toast.success(`${title} · −${money(cost)}`, { description: days > 0 ? `This delays your goal by ${plural(days, 'day')}.` : undefined });
   };
 
   const reset = () => {
     setStates(createAllStates());
     setChildId('leo');
     setSelected(null);
-    toast.success('La démo est réinitialisée');
+    toast.success('Demo has been reset');
   };
 
   const goTo = (target: 'parent' | 'teen') => {
@@ -365,7 +365,7 @@ function Index() {
         openCategory(blockedCategory.id);
       } else {
         update(childId, s => setPermission(s, 'games', false));
-        toast('Jeux vidéo bloqué pour la démo');
+        toast('Gaming blocked for the demo');
         openCategory('games');
       }
     }
@@ -388,50 +388,50 @@ function Index() {
           <BrandMark />
           <div>
             <div className="brand-name">KIDO<span> PAY</span><span className="brand-dot" /></div>
-            <p className="brand-tagline">Finance parentale & autonomie ado</p>
+            <p className="brand-tagline">Parental trust & teen independence</p>
           </div>
         </div>
-        <div className="desktop-role-switch" role="group" aria-label="Vue du compte">
-          <Button variant="ghost" aria-pressed={view === 'parent'} className={cn('role-button', view === 'parent' && 'selected')} onClick={() => changeView('parent')}><Users />Vue Parent</Button>
-          <Button variant="ghost" aria-pressed={view === 'teen'} className={cn('role-button', view === 'teen' && 'selected')} onClick={() => changeView('teen')}><Wallet />Vue Ado</Button>
-          <Button variant="ghost" aria-pressed={view === 'both'} className={cn('role-button', view === 'both' && 'selected')} onClick={() => changeView('both')}><Zap />Mode démo simultané</Button>
+        <div className="desktop-role-switch" role="group" aria-label="Account view">
+          <Button variant="ghost" aria-pressed={view === 'parent'} className={cn('role-button', view === 'parent' && 'selected')} onClick={() => changeView('parent')}><Users />Parent view</Button>
+          <Button variant="ghost" aria-pressed={view === 'teen'} className={cn('role-button', view === 'teen' && 'selected')} onClick={() => changeView('teen')}><Wallet />Teen view</Button>
+          <Button variant="ghost" aria-pressed={view === 'both'} className={cn('role-button', view === 'both' && 'selected')} onClick={() => changeView('both')}><Zap />Dual demo mode</Button>
         </div>
         <div className="header-tools">
-          <span className="demo-label"><span /> Démo interactive</span>
-          <Button variant="ghost" size="icon" className="theme-button" aria-label={theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre'} title="Changer de thème" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun /> : <Moon />}</Button>
+          <span className="demo-label"><span /> Interactive demo</span>
+          <Button variant="ghost" size="icon" className="theme-button" aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'} title="Change theme" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>{theme === 'dark' ? <Sun /> : <Moon />}</Button>
           <div className="parent-avatar" aria-hidden="true">JD</div>
         </div>
       </header>
 
-      <nav className="mobile-role-switch" aria-label="Vue mobile">
-        <Button variant="ghost" aria-pressed={mobileView === 'parent'} className={cn(mobileView === 'parent' && 'selected')} onClick={() => changeView('parent')}><Users />Parent{allRequests.length > 0 && <span className="request-count" aria-label={`${allRequests.length} demande(s) en attente`}>{allRequests.length}</span>}</Button>
-        <Button variant="ghost" aria-pressed={mobileView === 'teen'} className={cn(mobileView === 'teen' && 'selected')} onClick={() => changeView('teen')}><Wallet />Ado</Button>
+      <nav className="mobile-role-switch" aria-label="Mobile view">
+        <Button variant="ghost" aria-pressed={mobileView === 'parent'} className={cn(mobileView === 'parent' && 'selected')} onClick={() => changeView('parent')}><Users />Parent{allRequests.length > 0 && <span className="request-count" aria-label={`${allRequests.length} pending request(s)`}>{allRequests.length}</span>}</Button>
+        <Button variant="ghost" aria-pressed={mobileView === 'teen'} className={cn(mobileView === 'teen' && 'selected')} onClick={() => changeView('teen')}><Wallet />Teen</Button>
       </nav>
 
       <main className="main-content">
         <div className="page-heading">
           <div>
-            <div className="eyebrow"><span /> VOTRE ESPACE FAMILLE</div>
-            <h1>Votre confiance. <span>Son autonomie.</span></h1>
-            <p>Un peu d’argent de poche. Un grand pas vers l’indépendance.</p>
+            <div className="eyebrow"><span /> YOUR FAMILY SPACE</div>
+            <h1>Your trust. <span>Their independence.</span></h1>
+            <p>A little pocket money. A big step toward independence.</p>
           </div>
           <div className="family-selector">
             <ChildAvatar id={childId} name={currentChild.name} size={36} />
-            <div><strong>{currentChild.name} Dubois</strong><span>Compte ado · {currentChild.age} ans</span></div>
+            <div><strong>{currentChild.name} Dubois</strong><span>Teen account · {currentChild.age} yrs</span></div>
           </div>
         </div>
 
         <DemoGuide open={guideOpen} name={currentChild.name} steps={guideSteps} onToggle={() => setGuideOpen(o => !o)} onAction={guideAction} />
 
         <div className={cn('workspace', `view-${view}`, `mobile-${mobileView}`)}>
-          <motion.section layout={!reduced} className="parent-panel" aria-label="Contrôles parentaux">
+          <motion.section layout={!reduced} className="parent-panel" aria-label="Parental controls">
             <div className="column-heading">
-              <div className="column-label"><span className="heading-icon"><ShieldCheck size={17} /></span><h2>Espace parent</h2></div>
-              <span className="live-status"><span /> Synchronisé</span>
+              <div className="column-label"><span className="heading-icon"><ShieldCheck size={17} /></span><h2>Parent space</h2></div>
+              <span className="live-status"><span /> Synced</span>
             </div>
 
             <div className="allowance-section">
-              <div className="child-selector-bar" role="group" aria-label="Choisir un enfant">
+              <div className="child-selector-bar" role="group" aria-label="Choose a child">
                 {CHILDREN.map(c => (
                   <button
                     key={c.id}
@@ -442,39 +442,39 @@ function Index() {
                   >
                     <span className="child-avatar-mini" aria-hidden="true">{c.name[0]}</span>
                     <span className="child-name">{c.name}</span>
-                    <span className="child-age">{c.age} ans</span>
+                    <span className="child-age">{c.age} yrs</span>
                   </button>
                 ))}
               </div>
 
               <div className="section-title">
-                <div><span className="section-icon"><ArrowUpRight size={18} /></span><h3>Versements automatiques</h3></div>
-                <span className="small-tag">Argent de poche</span>
+                <div><span className="section-icon"><ArrowUpRight size={18} /></span><h3>Automatic allowance</h3></div>
+                <span className="small-tag">Pocket money</span>
               </div>
               <div className="allowance-value">
-                <div><span className="field-label">Montant du versement</span><strong>{child.allowance}<span> €</span></strong></div>
-                <div className="frequency-switch" role="group" aria-label="Fréquence">
-                  <Button variant="ghost" aria-pressed={child.frequency === 'weekly'} className={cn(child.frequency === 'weekly' && 'selected')} onClick={() => update(childId, s => ({ ...s, frequency: 'weekly' }))}>Hebdomadaire</Button>
-                  <Button variant="ghost" aria-pressed={child.frequency === 'monthly'} className={cn(child.frequency === 'monthly' && 'selected')} onClick={() => update(childId, s => ({ ...s, frequency: 'monthly' }))}>Mensuel</Button>
+                <div><span className="field-label">Allowance amount</span><strong>{child.allowance}<span> €</span></strong></div>
+                <div className="frequency-switch" role="group" aria-label="Frequency">
+                  <Button variant="ghost" aria-pressed={child.frequency === 'weekly'} className={cn(child.frequency === 'weekly' && 'selected')} onClick={() => update(childId, s => ({ ...s, frequency: 'weekly' }))}>Weekly</Button>
+                  <Button variant="ghost" aria-pressed={child.frequency === 'monthly'} className={cn(child.frequency === 'monthly' && 'selected')} onClick={() => update(childId, s => ({ ...s, frequency: 'monthly' }))}>Monthly</Button>
                 </div>
               </div>
-              <Slider aria-label="Montant du versement" min={ALLOWANCE_MIN} max={ALLOWANCE_MAX} step={5} value={[child.allowance]} onValueChange={v => { const next = v[0]; if (next !== undefined) update(childId, s => ({ ...s, allowance: next })); }} className="allowance-slider" />
-              <div className="slider-labels"><span>10 €</span><span>150 €</span></div>
+              <Slider aria-label="Allowance amount" min={ALLOWANCE_MIN} max={ALLOWANCE_MAX} step={5} value={[child.allowance]} onValueChange={v => { const next = v[0]; if (next !== undefined) update(childId, s => ({ ...s, allowance: next })); }} className="allowance-slider" />
+              <div className="slider-labels"><span>€10</span><span>€150</span></div>
               <div className="next-payment">
-                <span><span className="tiny-icon"><RefreshCw size={13} /></span>Prochain versement</span>
-                <strong>{child.frequency === 'weekly' ? 'Lundi prochain' : 'Le 1er du mois'}<span> · {child.allowance} €</span></strong>
+                <span><span className="tiny-icon"><RefreshCw size={13} /></span>Next payout</span>
+                <strong>{child.frequency === 'weekly' ? 'Next Monday' : '1st of the month'}<span> · €{child.allowance}</span></strong>
               </div>
 
               <div className="instant-transfer-block">
                 <div className="section-title">
-                  <div><span className="section-icon"><Zap size={17} /></span><h3>Virement instantané</h3></div>
-                  <span className="small-tag">Coup de pouce</span>
+                  <div><span className="section-icon"><Zap size={17} /></span><h3>Instant transfer</h3></div>
+                  <span className="small-tag">Quick boost</span>
                 </div>
-                <p className="instant-subtitle">Envoyer immédiatement de l'argent sur la carte de {currentChild.name} :</p>
+                <p className="instant-subtitle">Send money instantly to {currentChild.name}’s card:</p>
                 <div className="instant-buttons">
                   {[5, 10, 20, 50].map(amount => (
                     <Button key={amount} variant="outline" size="sm" onClick={() => sendInstantMoney(amount)} className="instant-btn">
-                      +{amount} €
+                      +€{amount}
                     </Button>
                   ))}
                 </div>
@@ -483,17 +483,17 @@ function Index() {
 
             <div className="restrictions-section" id="regles">
               <div className="section-title">
-                <div><span className="section-icon"><ShieldCheck size={18} /></span><h3>Restrictions & plafonds</h3></div>
-                <span title="Catégories autorisées" className="muted-icon"><CircleHelp size={16} aria-hidden="true" /></span>
+                <div><span className="section-icon"><ShieldCheck size={18} /></span><h3>Restrictions & limits</h3></div>
+                <span title="Allowed categories" className="muted-icon"><CircleHelp size={16} aria-hidden="true" /></span>
               </div>
-              <p className="section-subtitle">Les bonnes limites, pour les bonnes habitudes.</p>
+              <p className="section-subtitle">The right limits build the right habits.</p>
               <div className="permission-list">
                 {categories.map(category => (
                   <div className={cn('permission-row', !child.permissions[category.id] && 'restricted')} key={category.id}>
                     <div className="category-icon"><category.icon size={19} /></div>
                     <div className="permission-text">
                       <label htmlFor={`permission-${category.id}`}>{category.title}</label>
-                      <span>{!child.permissions[category.id] ? (grantText(child.grants[category.id]) ?? 'Catégorie bloquée') : category.note}</span>
+                      <span>{!child.permissions[category.id] ? (grantText(child.grants[category.id]) ?? 'Category blocked') : category.note}</span>
                     </div>
                     <Switch
                       id={`permission-${category.id}`}
@@ -505,13 +505,13 @@ function Index() {
                   </div>
                 ))}
               </div>
-              <div className="security-note"><ShieldCheck size={14} /><span>Vos règles s’appliquent instantanément au compte de {currentChild.name}.</span></div>
+              <div className="security-note"><ShieldCheck size={14} /><span>Your rules apply instantly to {currentChild.name}’s account.</span></div>
             </div>
 
             <div className="requests-section" id="centre-demandes">
               <div className="section-title">
-                <div><span className="section-icon"><Bell size={18} /></span><h3>Centre de demandes</h3><span className="count-tag">{allRequests.length}</span></div>
-                <span className="field-label">En temps réel</span>
+                <div><span className="section-icon"><Bell size={18} /></span><h3>Request center</h3><span className="count-tag">{allRequests.length}</span></div>
+                <span className="field-label">Real time</span>
               </div>
               <div aria-live="polite">
                 <AnimatePresence initial={false}>
@@ -522,60 +522,60 @@ function Index() {
                 {allRequests.length === 0 && (
                   <div className="empty-requests">
                     <div className="all-clear"><Check size={19} /></div>
-                    <div><strong>Tout est en ordre</strong><p>Aucune demande en attente. {currentChild.name} gère comme un pro.</p></div>
+                    <div><strong>All clear</strong><p>No pending requests. {currentChild.name} is handling it like a pro.</p></div>
                     <span className="small-sparkle"><Sparkles size={19} /></span>
                   </div>
                 )}
               </div>
             </div>
-            <div className="parent-bottom"><Heart size={15} /><span>L’autonomie s’apprend. La confiance se construit.</span></div>
+            <div className="parent-bottom"><Heart size={15} /><span>Independence is learned. Trust is built.</span></div>
           </motion.section>
 
-          <motion.section layout={!reduced} className="teen-panel" aria-label="Portefeuille ado">
+          <motion.section layout={!reduced} className="teen-panel" aria-label="Teen wallet">
             <div className="column-heading">
-              <div className="column-label"><span className="heading-icon"><Smartphone size={17} /></span><h2>Dans la poche de {currentChild.name}</h2></div>
-              <span className="field-label preview-caption">Aperçu en direct</span>
+              <div className="column-label"><span className="heading-icon"><Smartphone size={17} /></span><h2>In {currentChild.name}’s pocket</h2></div>
+              <span className="field-label preview-caption">Live preview</span>
             </div>
             <div className="phone-surround">
               <div className="phone-frame">
                 <div className="phone-status" aria-hidden="true"><span>9:41</span><div className="dynamic-island" /><span className="phone-signals"><span className="battery" /></span></div>
                 <div className="phone-content">
                   <div className="teen-header">
-                    <div><p>TON ESPACE, TES PROJETS</p><h3>Salut {currentChild.name} <span className="wave" aria-hidden="true">✌️</span></h3></div>
+                    <div><p>YOUR SPACE, YOUR PLANS</p><h3>Hey {currentChild.name} <span className="wave" aria-hidden="true">✌️</span></h3></div>
                     <div className="teen-avatar"><ChildAvatar id={childId} name={currentChild.name} size={43} /><span /></div>
                   </div>
                   <BalanceCard balance={child.balance} />
                   <div className="teen-allowance">
                     <div className="mini-icon"><ArrowDownLeft size={16} /></div>
-                    <div><strong>Le prochain petit boost</strong><span>{child.frequency === 'weekly' ? 'Lundi prochain' : 'Le 1er du mois'}</span></div>
-                    <strong>+{child.allowance} €</strong>
+                    <div><strong>Your next boost</strong><span>{child.frequency === 'weekly' ? 'Next Monday' : '1st of the month'}</span></div>
+                    <strong>+€{child.allowance}</strong>
                   </div>
 
                   <div className="goal-card">
                     <div className="goal-top">
-                      <span className="goal-label"><Target size={15} aria-hidden="true" /> Objectif · {child.goal.name}</span>
+                      <span className="goal-label"><Target size={15} aria-hidden="true" /> Goal · {child.goal.name}</span>
                       <strong>{money(child.balance)} / {money(child.goal.target)}</strong>
                     </div>
-                    <div className="goal-bar" role="progressbar" aria-label={`Progression vers ${child.goal.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={goalPct}><span style={{ width: `${goalPct}%` }} /></div>
-                    <p className="goal-meta">{goalDays === 0 ? 'Objectif atteint, bravo !' : `Au rythme actuel : encore ~${plural(goalDays, 'jour')}.`}</p>
-                    {child.impact && <p className="goal-impact" role="status">{child.impact.title} : ça repousse ton objectif de {plural(child.impact.days, 'jour')}.</p>}
+                    <div className="goal-bar" role="progressbar" aria-label={`Progress toward ${child.goal.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={goalPct}><span style={{ width: `${goalPct}%` }} /></div>
+                    <p className="goal-meta">{goalDays === 0 ? 'Goal reached, well done!' : `At this pace: about ${plural(goalDays, 'day')} to go.`}</p>
+                    {child.impact && <p className="goal-impact" role="status">{child.impact.title}: this delays your goal by {plural(child.impact.days, 'day')}.</p>}
                   </div>
 
                   {child.reply && (
                     <div className={cn('reply-banner', child.reply.decision.kind === 'later' && 'later')} role="status">
                       <span>{replyText(child.reply)}</span>
-                      <button type="button" aria-label="Fermer le message" onClick={() => update(childId, dismissReply)}><X size={16} /></button>
+                      <button type="button" aria-label="Close message" onClick={() => update(childId, dismissReply)}><X size={16} /></button>
                     </div>
                   )}
 
-                  <div className="wallet-section-heading"><h4>Où tu peux dépenser</h4><span>{activeCount}/5 actives</span></div>
+                  <div className="wallet-section-heading"><h4>Where you can spend</h4><span>{activeCount}/5 active</span></div>
                   <div className="teen-categories">
                     {categories.map(category => {
                       const isLocked = isBlocked(child, category.id);
                       const grant = child.grants[category.id];
                       const status = !isLocked
-                        ? (grantText(grant) ?? 'C’est permis')
-                        : hasRequest(child, category.id) ? 'Demande envoyée' : 'Bloqué par les parents';
+                        ? (grantText(grant) ?? 'Allowed')
+                        : hasRequest(child, category.id) ? 'Request sent' : 'Blocked by parents';
                       return (
                         <motion.div layout={!reduced} key={category.id} animate={{ opacity: isLocked ? .85 : 1 }}>
                           <Button
@@ -592,7 +592,7 @@ function Index() {
                       );
                     })}
                   </div>
-                  <div className="wallet-section-heading activity-heading"><h4>Les derniers mouvements</h4><span><MoreHorizontal size={18} aria-hidden="true" /></span></div>
+                  <div className="wallet-section-heading activity-heading"><h4>Recent activity</h4><span><MoreHorizontal size={18} aria-hidden="true" /></span></div>
                   <div className="activity-list">
                     <AnimatePresence initial={false}>
                       {child.activity.slice(0, 3).map(item => {
@@ -607,21 +607,21 @@ function Index() {
                       })}
                     </AnimatePresence>
                   </div>
-                  <Button variant="outline" className="simulate-button" onClick={() => runPurchase('food')}><Zap size={15} />Simuler une dépense<span>−{money(PURCHASES.food.cost)}</span></Button>
+                  <Button variant="outline" className="simulate-button" onClick={() => runPurchase('food')}><Zap size={15} />Simulate a purchase<span>−{money(PURCHASES.food.cost)}</span></Button>
                 </div>
-                <div className="phone-bottom" aria-hidden="true"><Wallet size={19} className="text-primary" /><span>Mon portefeuille</span><span className="home-indicator" /></div>
+                <div className="phone-bottom" aria-hidden="true"><Wallet size={19} className="text-primary" /><span>My wallet</span><span className="home-indicator" /></div>
               </div>
             </div>
-            <div className="sync-caption"><span /><span>Connectés, même à distance.</span><RefreshCw size={12} aria-hidden="true" /></div>
+            <div className="sync-caption"><span /><span>Connected, even from afar.</span><RefreshCw size={12} aria-hidden="true" /></div>
           </motion.section>
         </div>
 
         <footer className="page-footer">
-          <span><ShieldCheck size={14} />Un espace sécurisé. Une famille connectée.</span>
+          <span><ShieldCheck size={14} />A secure space. A connected family.</span>
           <div>
             <span className="hackathon-tag">HYPERBLOOM <span>’26</span></span>
             <span className="footer-divider" />
-            <Button variant="ghost" size="sm" onClick={reset} title="Réinitialiser la démo"><RefreshCw size={13} />Réinitialiser la démo</Button>
+            <Button variant="ghost" size="sm" onClick={reset} title="Reset demo"><RefreshCw size={13} />Reset demo</Button>
           </div>
         </footer>
       </main>
@@ -631,14 +631,14 @@ function Index() {
           <div className={cn('modal-icon', blocked && 'blocked')}>
             {blocked ? <LockKeyhole size={25} /> : <ShieldCheck size={25} />}
           </div>
-          <DialogTitle>{blocked ? 'Une petite limite, pour le moment' : selectedCategory?.short}</DialogTitle>
+          <DialogTitle>{blocked ? 'A small limit, for now' : selectedCategory?.short}</DialogTitle>
           <DialogDescription>
             {blocked
-              ? (pending ? 'Ta demande est partie. Tes parents vont te répondre.' : 'Cette catégorie est restreinte par tes parents. Dis-leur pourquoi tu en as besoin :')
-              : selected ? `Autorisé. Achat type : ${PURCHASES[selected].title} · ${money(PURCHASES[selected].cost)}.` : ''}
+              ? (pending ? 'Your request is on its way. Your parents will reply soon.' : 'This category is temporarily restricted by your parents. Tell them why you need it:')
+              : selected ? `Allowed. Sample purchase: ${PURCHASES[selected].title} · ${money(PURCHASES[selected].cost)}.` : ''}
           </DialogDescription>
           {blocked && !pending && (
-            <div className="reason-chips" role="radiogroup" aria-label="Motif de ta demande">
+            <div className="reason-chips" role="radiogroup" aria-label="Reason for your request">
               {REQUEST_REASONS.map(r => (
                 <button key={r} type="button" role="radio" aria-checked={reason === r} className={cn('reason-chip', reason === r && 'selected')} onClick={() => setReason(r)}>{r}</button>
               ))}
@@ -646,14 +646,14 @@ function Index() {
           )}
           {blocked ? (
             <Button className="modal-action" disabled={pending || !reason} onClick={sendRequest}>
-              {pending ? 'Demande envoyée · en attente' : reason ? 'Envoyer ma demande' : 'Choisis un motif'}<ArrowRight />
+              {pending ? 'Request sent · pending' : reason ? 'Send my request' : 'Pick a reason'}<ArrowRight />
             </Button>
           ) : (
             <>
               <Button className="modal-action" onClick={() => selected && runPurchase(selected)}>
-                Simuler cet achat<span className="modal-price">−{money(selected ? PURCHASES[selected].cost : 0)}</span>
+                Simulate this purchase<span className="modal-price">−{money(selected ? PURCHASES[selected].cost : 0)}</span>
               </Button>
-              <Button variant="ghost" className="modal-action" onClick={() => setSelected(null)}>Fermer</Button>
+              <Button variant="ghost" className="modal-action" onClick={() => setSelected(null)}>Close</Button>
             </>
           )}
         </DialogContent>

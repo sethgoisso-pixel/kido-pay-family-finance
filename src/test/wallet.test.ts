@@ -128,7 +128,7 @@ describe('Objectif d’épargne', () => {
 
   it('un achat stocke son impact sur l’objectif', () => {
     const r = purchase(fresh(), 'food');
-    expect(r.state.impact).toEqual({ days: 2, title: 'Pause snack' });
+    expect(r.state.impact).toEqual({ days: 2, title: 'Snack break' });
   });
 
   it('calcule les jours restants avant l’objectif', () => {
