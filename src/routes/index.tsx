@@ -196,17 +196,35 @@ function RequestCard({ request, childId, childName, onDecide }: {
   );
 }
 
-type GuideAction = 'rules' | 'askGames' | 'requests' | 'simulate';
+type GuideAction = 'rules' | 'ask' | 'requests' | 'simulate';
+type GuideStep = { title: string; text: string; action?: { label: string; key: GuideAction } };
 
-const GUIDE_STEPS: { title: string; text: string; action?: { label: string; key: GuideAction } }[] = [
-  { title: 'Le parent pose une règle', text: 'Dans « Restrictions & plafonds », chaque interrupteur bloque ou autorise une catégorie. Ici, Jeux vidéo est déjà bloqué.', action: { label: 'Voir l’espace parent', key: 'rules' } },
-  { title: 'Léo se heurte à la limite', text: 'Côté ado, il touche « Jeux vidéo » : un message bienveillant, pas un refus sec. Il choisit un motif et envoie sa demande.', action: { label: 'Essayer côté ado', key: 'askGames' } },
-  { title: 'Le parent répond en un tap', text: 'Dans le « Centre de demandes » : Oui, une fois · Jusqu’à 10 € · Pas maintenant (avec une raison).', action: { label: 'Voir les demandes', key: 'requests' } },
-  { title: 'Léo voit la réponse', text: 'Un bandeau lui explique la décision. Avec « Oui, une fois », la catégorie se reverrouille après un achat.' },
-  { title: 'Chaque achat a un sens', text: 'Le solde baisse en direct et l’appli montre l’effet sur son objectif d’épargne.', action: { label: 'Simuler −8,50 €', key: 'simulate' } },
-];
+/** Étapes du guide, adaptées à l'enfant sélectionné et aux catégories réellement bloquées. */
+function buildGuideSteps(name: string, blocked: string | null, spend: { name: string; cost: number } | null): GuideStep[] {
+  return [
+    {
+      title: 'Le parent pose une règle',
+      text: blocked
+        ? `Dans « Restrictions & plafonds », chaque interrupteur bloque ou autorise une catégorie. Pour ${name}, « ${blocked} » est bloqué.`
+        : `Dans « Restrictions & plafonds », chaque interrupteur bloque ou autorise une catégorie. Rien n'est bloqué pour ${name} : essaie d'en bloquer une.`,
+      action: { label: 'Voir l’espace parent', key: 'rules' },
+    },
+    {
+      title: `${name} se heurte à la limite`,
+      text: blocked
+        ? `Côté ado, ${name} touche « ${blocked} » : un message bienveillant, pas un refus sec. Un motif en un tap, et la demande part.`
+        : `Aucune catégorie n'est bloquée : le bouton en bloque une pour la démo, puis ouvre le côté ado.`,
+      action: { label: blocked ? 'Essayer côté ado' : 'Bloquer une catégorie et essayer', key: 'ask' },
+    },
+    { title: 'Le parent répond en un tap', text: 'Dans le « Centre de demandes » : Oui, une fois · Jusqu’à 10 € · Pas maintenant (avec une raison).', action: { label: 'Voir les demandes', key: 'requests' } },
+    { title: `${name} voit la réponse`, text: 'Un bandeau explique la décision. Avec « Oui, une fois », la catégorie se reverrouille après un achat.' },
+    spend
+      ? { title: 'Chaque achat a un sens', text: `Le solde baisse en direct et l’appli montre l’effet sur l’objectif d’épargne de ${name}.`, action: { label: `Simuler ${spend.name} · −${money(spend.cost)}`, key: 'simulate' } }
+      : { title: 'Chaque achat a un sens', text: 'Toutes les catégories sont bloquées : débloques-en une côté parent pour simuler un achat.' },
+  ];
+}
 
-function DemoGuide({ open, onToggle, onAction }: { open: boolean; onToggle: () => void; onAction: (key: GuideAction) => void }) {
+function DemoGuide({ open, name, steps, onToggle, onAction }: { open: boolean; name: string; steps: GuideStep[]; onToggle: () => void; onAction: (key: GuideAction) => void }) {
   return (
     <section className="demo-guide" aria-labelledby="guide-title">
       <button type="button" className="demo-guide-head" aria-expanded={open} aria-controls="guide-body" onClick={onToggle}>
@@ -214,9 +232,9 @@ function DemoGuide({ open, onToggle, onAction }: { open: boolean; onToggle: () =
         <span className="guide-toggle">{open ? 'Masquer' : 'Voir les 5 étapes'}<ChevronDown size={16} aria-hidden="true" className={cn(open && 'rotated')} /></span>
       </button>
       <div id="guide-body" className="demo-guide-body" hidden={!open}>
-        <p className="guide-intro">Une famille, deux écrans synchronisés en direct : tout ce que fait le parent apparaît tout de suite chez l’ado, et inversement. Suis l’histoire de Léo.</p>
+        <p className="guide-intro">Une famille, deux écrans synchronisés en direct : tout ce que fait le parent apparaît tout de suite chez l’ado, et inversement. Suis l’histoire de {name}.</p>
         <ol className="guide-steps">
-          {GUIDE_STEPS.map(step => {
+          {steps.map(step => {
             const action = step.action;
             return (
               <li key={step.title}>
@@ -330,11 +348,29 @@ function Index() {
     window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }), 150);
   };
 
+  // Le guide suit l'état réel : première catégorie bloquée (sans demande en cours si possible) et première catégorie dépensable
+  const blockedCategory = categories.find(c => isBlocked(child, c.id) && !hasRequest(child, c.id)) ?? categories.find(c => isBlocked(child, c.id));
+  const spendCategory = categories.find(c => !isBlocked(child, c.id));
+  const guideSteps = buildGuideSteps(
+    currentChild.name,
+    blockedCategory?.short ?? null,
+    spendCategory ? { name: PURCHASES[spendCategory.id].title, cost: PURCHASES[spendCategory.id].cost } : null,
+  );
+
   const guideAction = (key: GuideAction) => {
     if (key === 'rules') { goTo('parent'); scrollToId('regles'); }
-    if (key === 'askGames') { goTo('teen'); openCategory('games'); }
+    if (key === 'ask') {
+      goTo('teen');
+      if (blockedCategory) {
+        openCategory(blockedCategory.id);
+      } else {
+        update(childId, s => setPermission(s, 'games', false));
+        toast('Jeux vidéo bloqué pour la démo');
+        openCategory('games');
+      }
+    }
     if (key === 'requests') { goTo('parent'); scrollToId('centre-demandes'); }
-    if (key === 'simulate') { goTo('teen'); runPurchase('food'); }
+    if (key === 'simulate' && spendCategory) { goTo('teen'); runPurchase(spendCategory.id); }
   };
 
   const selectedCategory = categories.find(c => c.id === selected);
@@ -385,7 +421,7 @@ function Index() {
           </div>
         </div>
 
-        <DemoGuide open={guideOpen} onToggle={() => setGuideOpen(o => !o)} onAction={guideAction} />
+        <DemoGuide open={guideOpen} name={currentChild.name} steps={guideSteps} onToggle={() => setGuideOpen(o => !o)} onAction={guideAction} />
 
         <div className={cn('workspace', `view-${view}`, `mobile-${mobileView}`)}>
           <motion.section layout={!reduced} className="parent-panel" aria-label="Contrôles parentaux">
