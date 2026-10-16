@@ -570,3 +570,25 @@ a[href*="lovable.dev"] {
   .request-declines, .request-actions { grid-column: 1 / -1; }
   .teen-category { min-height: 112px; }
 }
+
+/* =====================================================================
+   Corrections de contraste (retours PageSpeed / Lighthouse)
+   Texte indigo : plus clair en mode sombre, plus foncé en mode clair
+   ===================================================================== */
+:root, .dark { --primary-text: oklch(.78 .13 277); }
+:root[data-theme="light"] { --primary-text: oklch(.45 .2 277); }
+
+.selected { color: var(--primary-text) !important; }
+.next-payment strong > span,
+.tiny-icon,
+.mini-icon,
+.teen-allowance > strong,
+.simulate-button,
+.phone-bottom > span:not(.home-indicator),
+.hackathon-tag > span { color: var(--primary-text); }
+
+/* Pas de texte semi-transparent : la transparence fait baisser le contraste */
+.balance-bottom > span:last-child,
+.simulate-button > span,
+.modal-price { opacity: 1; }
+.teen-categories > div { opacity: 1 !important; }
