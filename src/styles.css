@@ -592,3 +592,27 @@ a[href*="lovable.dev"] {
 .simulate-button > span,
 .modal-price { opacity: 1; }
 .teen-categories > div { opacity: 1 !important; }
+
+/* =====================================================================
+   Guide de la démo (bandeau pour le jury)
+   ===================================================================== */
+.demo-guide { margin: 0 0 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-raised); overflow: hidden; }
+.demo-guide-head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; padding: 10px 14px; background: transparent; border: 0; color: var(--foreground); cursor: pointer; text-align: left; font: inherit; }
+.demo-guide-head:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.guide-title-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.guide-title-wrap svg { color: var(--primary-text); }
+.guide-title-wrap strong { font-size: 15px; color: var(--foreground); }
+.guide-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted-foreground); white-space: nowrap; }
+.guide-toggle svg { transition: transform .2s; }
+.guide-toggle svg.rotated { transform: rotate(180deg); }
+.demo-guide-body { display: grid; gap: 12px; padding: 0 14px 14px; }
+.demo-guide-body[hidden] { display: none; }
+.guide-intro, .guide-note { font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.guide-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; counter-reset: step; }
+.guide-steps li { counter-increment: step; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 6px 10px; align-items: start; }
+.guide-steps li::before { content: counter(step); grid-row: 1 / span 2; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); font-size: 13px; font-weight: 700; }
+.guide-steps li > div strong { font-size: 14px; }
+.guide-steps li > div p { margin-top: 2px; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.guide-steps li > button { grid-column: 2; justify-self: start; min-height: 36px; font-size: 13px; gap: 6px; }
+@media (max-width: 767px) { .guide-steps li > button { min-height: 44px; } .demo-guide-head { min-height: 52px; } }
+@media (prefers-reduced-motion: reduce) { .guide-toggle svg { transition: none; } }
