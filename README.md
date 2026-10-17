@@ -1,9 +1,10 @@
 # KIDO PAY
 
+
 **Parental finance & teen independence, synchronized in real time.**
 Built for the HyperBloom October 2026 hackathon (UI/UX & Web Design).
 
-> 🔗 Demo: https://kido-pay-family-finance.deployxa.online  ·  🎬 Video: _paste your YouTube link here_
+> 🔗 Demo: https://kido-pay-family-finance.deployxa.online  ·  🎬 Video: https://youtu.be/_NGRJRikTFI?si=sYegOH_2ew0Xq8Dp
 
 ## The problem
 
