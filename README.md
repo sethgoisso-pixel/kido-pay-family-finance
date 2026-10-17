@@ -10,7 +10,7 @@ Built for the HyperBloom October 2026 hackathon (UI/UX & Web Design).
 
 Giving a teenager cash offers no follow-up. Lending them a parent's card is risky and a source of conflict. Existing apps lock categories… with no explanation and no dialogue. The result: the teen feels a wall, and the parent is cast as a police officer.
 
-_Starting point: my father sometimes refuses to give me money without telling me why. Other times I ask my mother for money without explaining what it is for. Both of us end up frustrated: I feel blocked, and my parents have no idea where the money goes. In my class, I have seen classmates spend money their parents gave them for a school contribution on something else, so parents lose track of how it is used. Kido Pay is not about controlling a teenager's life. It is about making family money clearer and fairer for both sides._
+_Starting point: My father sometimes refuses to give me money without telling me why. Other times I ask my mother for money without explaining what it is for. Both of us end up frustrated: I feel blocked, and my parents have no idea where the money goes. Kido Pay is not about controlling a teenager's life. It is about making family money clearer and fairer for both sides._
 
 ## The idea
 
