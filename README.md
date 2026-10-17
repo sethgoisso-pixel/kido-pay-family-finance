@@ -1,57 +1,58 @@
 # KIDO PAY
 
-**Finance parentale & autonomie ado, synchronisées en temps réel.**
-Projet réalisé pour le hackathon HyperBloom October 2026 (UI/UX & Web Design).
+**Parental finance & teen independence, synchronized in real time.**
+Built for the HyperBloom October 2026 hackathon (UI/UX & Web Design).
 
-> 🔗 Démo : _colle ici le lien public_  ·  🎬 Vidéo : _colle ici le lien_
+> 🔗 Demo: https://kido-pay-family-finance.deployxa.online  ·  🎬 Video: _paste your YouTube link here_
 
-## Le problème
+## The problem
 
-Donner du cash à un ado ne permet aucun suivi. Lui prêter une carte parentale est risqué et source de conflits. Les applications existantes verrouillent des catégories… sans expliquer, sans dialogue. Résultat : l'ado ressent un mur, le parent un rôle de gendarme.
+Giving a teenager cash offers no follow-up. Lending them a parent's card is risky and a source of conflict. Existing apps lock categories… with no explanation and no dialogue. The result: the teen feels a wall, and the parent is cast as a police officer.
 
-_Point de départ : [1 ou 2 phrases sur ton propre vécu d'étudiant, par exemple une situation où tu as été bloqué sans explication, ou l'inverse]._
+_Starting point: my father sometimes refuses to give me money without telling me why. Other times I ask my mother for money without explaining what it is for. Both of us end up frustrated: I feel blocked, and my parents have no idea where the money goes. In my class, I have seen classmates spend money their parents gave them for a school contribution on something else, so parents lose track of how it is used. Kido Pay is not about controlling a teenager's life. It is about making family money clearer and fairer for both sides._
 
-## L'idée
+## The idea
 
-**Chaque refus devient une conversation.**
+**Every "no" becomes a conversation.**
 
-1. Le parent règle l'argent de poche et verrouille des catégories.
-2. L'ado voit **pourquoi** et **comment demander** : il choisit un motif en un tap.
-3. Le parent répond en un tap : _Oui, une fois_ · _Jusqu'à 10 €_ · _Pas maintenant_ (avec une raison).
-4. L'ado voit la réponse, jamais un simple « refusé ».
-5. Un **objectif d'épargne** montre l'effet réel d'un achat : « Ça repousse ton objectif de 2 jours ».
+1. The parent sets the pocket money and locks categories.
+2. The teen sees **why** and **how to ask**: they pick a reason in one tap.
+3. The parent answers in one tap: _Yes, once_ · _Up to €10_ · _Not now_ (with a reason).
+4. The teen sees the answer, never a bare "denied".
+5. A **savings goal** shows the real effect of a purchase: "This pushes your goal back by 2 days."
 
-## Choix de design
+## Design choices
 
-- **Démo double vue** sur desktop : parent et ado côte à côte pour prouver la synchronisation. Sur mobile, plus de faux téléphone : l'expérience occupe tout l'écran avec un sélecteur Parent / Ado.
-- **Ton bienveillant** : « Une petite limite, pour le moment », pas « Accès refusé ».
-- **Autonomie encadrée** : deux profils (Léo 16 ans, Emma 13 ans) avec des règles, soldes et historiques indépendants.
-- **Code couleur fonctionnel** : menthe = solde et gains, indigo = actions, rouge = restrictions.
-- **Dark mode et light mode**, le thème système est respecté au premier chargement.
+- **Dual-view demo** on desktop: parent and teen side by side to prove the synchronization. On mobile, no more fake phone: the experience fills the whole screen with a Parent / Teen selector.
+- **Kind tone**: "A small limit, for now", not "Access denied".
+- **Guided independence**: two profiles (Léo, 16, and Emma, 13) with independent rules, balances and histories.
+- **Functional color code**: mint = balance and earnings, indigo = actions, red = restrictions.
+- **Dark mode and light mode**; the system theme is respected on first load.
 
-## Accessibilité
+## Accessibility
 
-- Texte à 12 px minimum, contrastes AA dans les deux thèmes (menthe assombri en mode clair).
-- L'information n'est jamais portée par la couleur seule : icône de cadenas + texte « Bloqué par les parents ».
-- Respect de `prefers-reduced-motion` (compteur, carte 3D, transitions).
-- Le solde animé est ignoré des lecteurs d'écran ; seule la valeur finale est annoncée (`role="status"`).
-- Boutons à bascule avec `aria-pressed`, puces de motif en `radiogroup`, dialogues avec focus piégé.
-- Cibles tactiles de 44 px minimum sur mobile, focus clavier visible.
+- Lighthouse accessibility score: **100**.
+- Text is at least 12 px; AA contrast in both themes (mint is darkened in light mode).
+- Information is never carried by color alone: lock icon + "Blocked by parents" label.
+- `prefers-reduced-motion` is respected (counter, 3D card, transitions).
+- The animated balance is hidden from screen readers; only the final value is announced (`role="status"`).
+- Toggle buttons use `aria-pressed`, reason chips are a `radiogroup`, dialogs trap focus.
+- Touch targets are at least 44 px on mobile, and keyboard focus is visible.
 
-## Limites assumées
+## Known limits
 
-Démo front-end uniquement : état en mémoire, aucun compte réel, aucun paiement réel.
-La carte virtuelle réagit au pointeur et au toucher (pas au gyroscope).
+Front-end demo only: state lives in memory, with no real accounts and no real payments.
+The virtual card reacts to pointer and touch (not to the gyroscope).
 
-## Lancer le projet
+## Run the project
 
 ```sh
 npm install
-npm run dev     # développement
-npm test        # tests de la logique métier (vitest)
+npm run dev     # development
+npm test        # unit tests for the money logic (vitest)
 npm run build   # production
 ```
 
-**Stack :** React 19, TanStack Start, Tailwind, shadcn/ui, Framer Motion. Construit avec Lovable, puis retravaillé à la main.
+**Stack:** React 19, TanStack Start, Tailwind, shadcn/ui, Framer Motion. Built with Lovable, then reworked by hand with the help of Claude (AI tools are allowed by the hackathon rules). The video voice-over was generated with ElevenLabs.
 
-**Structure utile :** `src/lib/wallet.ts` (logique pure en centimes, testée) · `src/routes/index.tsx` (interface).
+**Useful structure:** `src/lib/wallet.ts` (pure logic in cents, tested) · `src/routes/index.tsx` (interface).
